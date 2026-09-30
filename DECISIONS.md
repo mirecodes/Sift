@@ -128,6 +128,11 @@
 - Decision (DESIGN.md 18): R3F `onClick` on an invisible hit box per animal forces one idle action and shows a voxel `!` bubble for 1.2s. Disabled during Focus routines (immersion, ARCHITECTURE 1.1). Not persisted. Rejected: DOM overlay bubble (needs projecting 3D positions each frame; drei `Html` is not used, ADR-009).
 - Consequences: Partially answers Q7 (interaction, not arrangement). Animals are 0.25 block, so the hit box is larger than the model.
 
+## ADR-023: Catalog grows from 20 to 50 species
+- Date: 2026-09-30 · Status: Accepted (owner request)
+- Decision: +16 Common, +8 Epic, +5 Legendary, +1 Mythic (Tiger). Sizes stay within DESIGN.md 16.2 (owner's larger block sizes were dropped) and ADR-005 (1×1 tile). Tiger shares the Unicorn's `sparkle` effect. Tier probabilities are unchanged, so a species' odds within a tier drop (uniform pick).
+- Consequences: Collection shows 50 cards and `ANIMALS` reads `n / 50`. Tiger is the white-tiger variant's orange sibling; a white variant is left for later.
+
 ## ADR-019: `resetMapOnStart` runtime option
 - Date: 2026-09-30 · Status: Accepted (owner request)
 - Decision: `config/app.yaml` `resetMapOnStart: true` makes every app start roll a new island seed and delete all placed animals (`StorageAdapter.resetWorld`). Sessions, settings and the active phase are kept.

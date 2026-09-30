@@ -9,6 +9,8 @@
 
 ## [Unreleased]
 
+- 2026-09-30 · **Added** — 30 new animals (ADR-023): Common Snail, Ladybug, Bee, Butterfly, Beetle, Turtle, Crab, Starfish, Mole, Sparrow, Pigeon, Hen, Guinea Pig, Lizard, Bat, Ferret; Epic Penguin, Owl, Otter, Beaver, Capybara, Axolotl, Parrot, Koala; Legendary Wolf, Bear, Panda, Red Panda, Peacock; Mythic Tiger (with the shared Mythic sparkle). Catalog is now 50 species.
+
 - 2026-09-30 · **Added** — Click an animal to poke it: a `!` speech bubble appears above it and it immediately performs exactly one idle action (ADR-022).
 
 - 2026-09-30 · **Changed** — Home wheel zoom limit raised from 1.4× to 2.1× (1.5× closer) so the island can be inspected in more detail.
