@@ -59,7 +59,8 @@ export function Island({ seed, animalCount, animate }: Props) {
       blocks.forEach((b, i) => {
         const hidden = (delays[i] as number) >= 0;
         dummy.position.set(b.x, b.y, b.z);
-        dummy.scale.setScalar(hidden ? 0 : 1);
+        if (hidden) dummy.scale.setScalar(0);
+        else dummy.scale.set(1, b.h, 1);
         dummy.updateMatrix();
         mesh.setMatrixAt(i, dummy.matrix);
         // Slight deterministic tint per block for a natural, pixel-like variation.
@@ -91,7 +92,8 @@ export function Island({ seed, animalCount, animate }: Props) {
         const p = Math.min(1, Math.max(0, (elapsed - delay) / config.render.growthMs));
         if (p < 1) pending = true;
         dummy.position.set(b.x, b.y, b.z);
-        dummy.scale.setScalar(easeOut(p));
+        const e = easeOut(p);
+        dummy.scale.set(e, e * b.h, e);
         dummy.updateMatrix();
         mesh.setMatrixAt(i, dummy.matrix);
       });

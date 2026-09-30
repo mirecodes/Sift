@@ -381,6 +381,14 @@ Defined in `src/world/palette.ts`. Not shared with UI tokens.
 | Dirt | `#9B6B43` | `#86593A` |
 | Stone | `#8A8F98` | `#747983` |
 
+### 14.3 Water
+
+| Token | Value |
+|---|---|
+| `water` | `#4FA8E8` (opaque) |
+| `water-streak` | `#9AD4FF` (flow streaks) |
+| `splash` | `#FFFFFF` |
+
 ## 15. Island
 
 ### 15.1 Structure
@@ -391,6 +399,9 @@ Defined in `src/world/palette.ts`. Not shared with UI tokens.
 ```
 - The underside is an inverted pyramid: the center column is about `coneSlope × half-width` layers deep (`config.island.coneSlope`), depth follows the smooth radius so the tip stays visible below the rim.
 - 1 unit = 1 block.
+- **Outline**: near-circular (Euclidean distance plus a small seeded jitter), 7×7 at the start.
+- **Heights**: each surface tile is level 1–3 and one level is **0.5 block** tall (surface at 0.5 / 1.0 / 1.5 above the base plane). Level 1 is one full block; each extra level adds a half-height slab (grass on top, dirt below).
+- **Terrain shape**: domain-warped fractal noise plus a weak tilt that raises the back (`-x`, `-z`) and lowers the front. Heights are terraced: a wide middle band is level 2 (plains), with level 3 hills and level 1 lowlands as smaller patches. Terrain is blended flat (level 2) around the camp, so hills never enclose the hut.
 - One `InstancedMesh` per block type.
 - Pixel-art textures (low resolution, `NearestFilter`) or flat colors.
 - Shape rules (size, seed, growth) are defined in `ARCHITECTURE.md`.
@@ -414,13 +425,26 @@ Defined in `src/world/palette.ts`. Not shared with UI tokens.
 
 - Theme is `light` (default, unchanged look) or `dark` (night), stored in settings and toggled from the top bar. It affects the world and the Focus overlay; UI surfaces keep their tokens.
 - **Night sky**: gradient `#070B24` to `#1F2C5C` with ~40 small white stars, cross-fading with the day sky over `--motion-scene`. Clouds turn dim blue-grey at 35% opacity. Ambient light becomes cool blue (`#7F8FD8`, 0.32) and the directional light a faint moonlight (`#93A8FF`, 0.28). Lighting blends over about 1s.
-- **Camp**: the island always has a campfire on the center tile and a small hut (1 tile) on the tile behind-left of it (`-x`, screen up-left), door facing `+z` (toward the viewer). Both tiles are reserved: animals are never placed on them.
+- **Camp**: the island always has a campfire on the center tile and a small hut (1 tile) two tiles from it along `-x` (one empty block between them), its door facing `+x`, toward the campfire. Both tiles are reserved: animals are never placed on them, and both sit at terrain level 2.
   - Day: the fire is a cold pit (three logs), the hut door is dark.
   - Night: flames (three stacked flickering boxes in orange/yellow/pale yellow), a warm point light (`#FF9A3C`) with gentle flicker, an additive radial glow on the ground (about 4 blocks wide), and a warm glowing hut door.
 - **Focus routines** (animals are 0.25x, see 16.2), triggered when the phase becomes `focus`, each animal starting after a random 0-0.8s delay, walking in a straight line and turning to face its direction with a small hop stride:
   - Day: every animal runs to the hut door, shrinks over 0.25s and disappears inside.
   - Night: animals walk to spots on the blocks nearest the hut (up to 3 per block), then lie on their side and breathe slowly (about 3.5% body scale, ~3s period).
   - Leaving Focus (Break or reload into Break): animals reappear at the door (day) or stand up (night) and walk back to their tiles. Reloading while in Focus shows the end state immediately. With reduced motion all of this snaps with no walking.
+
+### 15.5 Stream
+
+- One winding stream per island (deterministic from the seed). It starts about 2.3 tiles from the center on the back side of a chord, crosses the front half of the island (downhill on average) and leaves through the rim. It never touches the campfire or hut (at least 1.5 tiles away).
+- **Path**: the best of many wobbling chords (angle, lateral offset, meander phase): no tile is cut below its natural level, it stays clear of the camp, is at least 5 tiles long on the smallest island, and prefers bends and one or two level steps. The tile path is corner-cut twice so bends are rounded, not right-angled.
+- **Terrain is replaced, not reshaped**: a stream tile keeps the natural level of that tile (water never flows uphill, so a tile is only lowered to the level upstream when the terrain rises). Neighbor tiles are untouched: no raised banks, no clamping.
+- **Bed and banks**: the tile's top block is cut down 0.25 block (dirt bed); the water surface sits 0.12 block above the bed. The water is an opaque ribbon 0.7 block wide, narrowing slightly where a bend is too tight for its width so it never folds over itself. Everything in the tile that is not water is filled with grass at the surrounding tile height by a smooth bank mesh: the channel is cut out along the curved ribbon edge (no voxel steps, no square notch), with a wall down to the bed that has a thin grassy lip on top and dirt below. The bank reaches 0.03 block under the water edge so no bed shows between them. Where a bed tile's side is exposed (island rim or a lower neighbor), the bank continues down that side to the bed block (grassy lip over dirt), so it never reads as a thin floating sheet.
+- **Spring**: the ribbon starts with a round head at the first tile, and water bursts up from it: about 22 white cubes (0.06–0.10 block) shoot up in all directions (2–3.4 blocks/s, up to ~1 block high), fall back into the pool and shrink (~1.1s life, repeating).
+- **Falls**: at every level step the water leaves the lip on a horizontal tangent and curves down in a parabola (steepening to ~75°), then rounds out onto the lower bed. Where the stream reaches the island rim it falls outward, over the missing neighbor that points away from the center (never along the boundary), 2.5 blocks, and dissolves into mist.
+- **Splash**: white voxel cubes (`splash`, 0.05–0.09 block) burst up and outward from every landing point, fall back and shrink, repeating (~0.8s life, 12 per fall).
+- **Flow**: the water carries lighter streaks (`water-streak`) that scroll downstream (about 0.6 block/s). Focus slows this by `focusAnimalTimeScale`.
+- **Reduced motion**: streaks and splash are static.
+- Animals are never placed on water tiles (they are excluded from placement and from night sleeping spots).
 
 ## 16. Voxel Models
 

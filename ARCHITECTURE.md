@@ -214,12 +214,20 @@ const p = lerp(P_AT_25, P_AT_60, t); // per tier, sums to 1
 
 - The top surface grows with the number of animals.
 - Default rule `[ASSUMPTION]`:
-  - Initial size: 5×5
+  - Initial size: 7×7
   - Required tiles = `animalCount × 3` (includes free space per animal)
-  - Top side length = `max(5, ceil(sqrt(requiredTiles)))`, rounded up to an odd number
-- The shape is a slightly rounded square, not a perfect square (seed-based deterministic generation).
+  - Top side length = `max(7, ceil(sqrt(requiredTiles)))`, rounded up to an odd number
+- The shape is near-circular: tiles within a Euclidean radius of `side / 2` plus a small seeded jitter (deterministic generation).
+- Terrain height is level 1–3 per tile; one level is 0.5 block (`config.island.levelHeight`).
 - **Same animal count + same seed = always the same island** (shape never changes on reload).
 - A growth animation plays once when returning to Home after the island expands.
+
+### 6.3.1 Stream
+
+- `domain/island/stream.ts`: pure, seed-only stream path (tile centerline + water level per tile), picked from many candidate chords by a score (`StreamContext` supplies the natural terrain and the camp tiles). `generateIsland` replaces the natural terrain on those tiles (bed cut, same level), marks them `water`, and returns the visible run (`streams`, the last tile falls outward over the rim). The outline stays independent of the stream, so islands remain monotone.
+- `world/stream/streamMesh.ts` (pure): smoothed ribbon with curved falls and a round head, spray emitters (`spring`, `landing`, `rim`), and the bank mesh that fills each bed tile around the ribbon (marching squares on the distance to the ribbon edge, plus a wall down to the bed).
+- `world/stream/Stream.tsx`: renders the ribbon and strips, animates flow streaks and white splash particles (one instanced mesh, stateless per-particle motion).
+- Water tiles are excluded from animal placement.
 
 ### 6.4 Animal Placement
 
@@ -343,7 +351,7 @@ interface ActivePhase {      // single record for restoring an in-progress sessi
 
 ```
 config/
-└── app.yaml              # Runtime settings (test mode), bundled at build time
+└── app.yaml              # Runtime settings (test mode, map reset on start), bundled at build time
 src/
 ├── app/                  # Routing, global layout, providers, runtimeConfig.ts (reads config/app.yaml)
 ├── screens/
@@ -367,6 +375,7 @@ src/
 │   ├── animals/          # Animal meshes, idle animations, unicorn sparkles
 │   ├── camera/           # Isometric camera rig, Home ↔ Focus transition
 │   ├── props/            # Camp: hut and campfire (night lighting)
+│   ├── stream/           # Stream ribbon, waterfalls, splash
 │   ├── preview/          # Small canvas for the Break reward card
 │   ├── Scene.tsx         # The one persistent canvas (+ Clouds, RenderDriver, palette)
 ├── assets/

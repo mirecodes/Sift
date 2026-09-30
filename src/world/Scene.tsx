@@ -10,6 +10,7 @@ import { CameraRig, ELEVATION, type CameraControls } from './camera/CameraRig';
 import { Clouds } from './Clouds';
 import { Island, islandExtent } from './island/Island';
 import { Camp } from './props/Camp';
+import { Stream } from './stream/Stream';
 import { lighting, night as nightPalette, palette } from './palette';
 import { RenderDriver } from './RenderDriver';
 import type { WorldMode } from './types';
@@ -81,7 +82,7 @@ function Bob({ children, timeScale, reducedMotion }: { children: ReactNode; time
 export function Scene({ mode, seed, islandCount, animals, reducedMotion, theme }: SceneProps) {
   const dark = theme === 'dark';
   const night = useRef(dark ? 1 : 0);
-  const { tiles } = useMemo(() => generateIsland(seed, islandCount), [seed, islandCount]);
+  const { tiles, streams } = useMemo(() => generateIsland(seed, islandCount), [seed, islandCount]);
   const controls = useRef<CameraControls>({ azimuth: 0, zoom: 1 });
   const { side, depth, rise } = useMemo(() => islandExtent(seed, islandCount), [seed, islandCount]);
   const timeScale = mode === 'focus' ? config.render.focusAnimalTimeScale : 1;
@@ -109,6 +110,7 @@ export function Scene({ mode, seed, islandCount, animals, reducedMotion, theme }
         <CameraRig mode={mode} side={side} depth={depth} rise={rise} reducedMotion={reducedMotion} controls={controls} />
         <Bob timeScale={timeScale} reducedMotion={reducedMotion}>
           <Island seed={seed} animalCount={islandCount} animate={!reducedMotion} />
+          <Stream streams={streams} tiles={tiles}timeScale={timeScale} reducedMotion={reducedMotion} />
           <Camp night={night} reducedMotion={reducedMotion} />
           <Animals animals={animals} tiles={tiles} mode={mode} dark={dark} timeScale={timeScale} reducedMotion={reducedMotion} />
         </Bob>

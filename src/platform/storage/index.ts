@@ -22,5 +22,7 @@ export interface StorageAdapter {
   load(): Promise<PersistedState>;
   saveSettings(settings: Settings): Promise<void>;
   saveWorld(world: WorldState): Promise<void>;
+  /** Replaces the world and deletes every placed animal, in one transaction. */
+  resetWorld(world: WorldState): Promise<void>;
   commit(change: Commit): Promise<void>;
 }

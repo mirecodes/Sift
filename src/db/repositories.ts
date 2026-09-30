@@ -30,6 +30,13 @@ export function createDexieStorage(db: SiftDB = new SiftDB()): StorageAdapter {
       await db.kv.put({ key: 'world', value: world });
     },
 
+    async resetWorld(world) {
+      await db.transaction('rw', db.kv, db.animals, async () => {
+        await db.kv.put({ key: 'world', value: world });
+        await db.animals.clear();
+      });
+    },
+
     /** Session, animal, and active phase are written in ONE transaction (ARCHITECTURE.md 7.3). */
     async commit(change: Commit) {
       await db.transaction('rw', db.kv, db.sessions, db.animals, async () => {

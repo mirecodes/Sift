@@ -119,16 +119,16 @@ describe('focus cycle', () => {
   it('holds the island size back during the break, then grows on Home', async () => {
     const h = harness();
     await h.get().init();
-    for (let i = 0; i < 9; i++) {
+    for (let i = 0; i < 17; i++) {
       await h.get().startFocus();
       h.clock.t += 30 * MIN;
       await h.get().endFocus();
-      if (i < 8) await h.get().goHome();
+      if (i < 16) await h.get().goHome();
     }
-    expect(h.get().animals).toHaveLength(9);
-    expect(islandSide(selectIslandCount(h.get()))).toBe(5);
-    await h.get().goHome();
+    expect(h.get().animals).toHaveLength(17);
     expect(islandSide(selectIslandCount(h.get()))).toBe(7);
+    await h.get().goHome();
+    expect(islandSide(selectIslandCount(h.get()))).toBe(9);
   });
 });
 
@@ -150,6 +150,27 @@ describe('persistence', () => {
     expect(resolvePhase(b.get().phase, b.clock.t).kind).toBe('focusOvertime');
     await b.get().endFocus();
     expect(b.get().animals).toHaveLength(1);
+  });
+
+  it('resetMap starts with a new seed and no animals, and persists that', async () => {
+    const storage = createMemoryStorage();
+    const a = harness(storage);
+    await a.get().init();
+    await a.get().startFocus();
+    a.clock.t += 30 * MIN;
+    await a.get().endFocus();
+    expect(a.get().animals).toHaveLength(1);
+
+    const b = createAppStore({ storage, now: () => a.clock.t, rng: seededRng(99), uuid: () => 'x', resetMap: true });
+    await b.getState().init();
+    expect(b.getState().animals).toHaveLength(0);
+    expect(b.getState().world.seed).not.toBe(a.get().world.seed);
+    expect(b.getState().sessions).toHaveLength(1);
+
+    const c = harness(storage);
+    await c.get().init();
+    expect(c.get().animals).toHaveLength(0);
+    expect(c.get().world.seed).toBe(b.getState().world.seed);
   });
 
   it('restores a break with a pending reveal', async () => {
@@ -178,6 +199,7 @@ describe('persistence', () => {
       load: () => Promise.reject(new Error('blocked')),
       saveSettings: () => Promise.reject(new Error('blocked')),
       saveWorld: () => Promise.reject(new Error('blocked')),
+      resetWorld: () => Promise.reject(new Error('blocked')),
       commit: () => Promise.reject(new Error('blocked')),
     };
     const h = harness(broken);
