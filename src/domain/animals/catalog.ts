@@ -6,7 +6,7 @@ export interface AnimalSpecies {
   tier: Tier;
   /** Key into the voxel model registry (`src/assets/voxels`). */
   modelId: string;
-  idleAnimation: 'default' | 'flop' | 'sparkle';
+  idleAnimation: 'default' | 'flop' | 'sparkle' | 'rainbow' | 'flutter';
   /** Tiles occupied, [x, z]. All species are 1×1 (ADR-005). */
   footprint: readonly [number, number];
 }
@@ -32,7 +32,7 @@ export const CATALOG: readonly AnimalSpecies[] = [
   s('snail', 'Snail', 'common'),
   s('ladybug', 'Ladybug', 'common'),
   s('bee', 'Bee', 'common'),
-  s('butterfly', 'Butterfly', 'common'),
+  s('butterfly', 'Butterfly', 'common', 'flutter'),
   s('beetle', 'Beetle', 'common'),
   s('turtle', 'Turtle', 'common'),
   s('crab', 'Crab', 'common'),
@@ -45,34 +45,34 @@ export const CATALOG: readonly AnimalSpecies[] = [
   s('lizard', 'Lizard', 'common'),
   s('bat', 'Bat', 'common'),
   s('ferret', 'Ferret', 'common'),
-  // Epic
-  s('sheep', 'Sheep', 'epic'),
-  s('pig', 'Pig', 'epic'),
-  s('cat', 'Cat', 'epic'),
-  s('dog', 'Dog', 'epic'),
-  s('goat', 'Goat', 'epic'),
-  s('raccoon', 'Raccoon', 'epic'),
-  s('penguin', 'Penguin', 'epic'),
-  s('owl', 'Owl', 'epic'),
-  s('otter', 'Otter', 'epic'),
-  s('beaver', 'Beaver', 'epic'),
-  s('capybara', 'Capybara', 'epic'),
-  s('axolotl', 'Axolotl', 'epic'),
-  s('parrot', 'Parrot', 'epic'),
-  s('koala', 'Koala', 'epic'),
-  // Legendary
-  s('horse', 'Horse', 'legendary'),
-  s('cow', 'Cow', 'legendary'),
-  s('deer', 'Deer', 'legendary'),
-  s('fox', 'Fox', 'legendary'),
-  s('wolf', 'Wolf', 'legendary'),
-  s('bear', 'Bear', 'legendary'),
-  s('panda', 'Panda', 'legendary'),
-  s('redpanda', 'Red Panda', 'legendary'),
-  s('peacock', 'Peacock', 'legendary'),
-  // Mythic (every Mythic species shares the sparkle effect)
-  s('unicorn', 'Unicorn', 'mythic', 'sparkle'),
-  s('tiger', 'Tiger', 'mythic', 'sparkle'),
+  // Mythic (second tier, blue)
+  s('sheep', 'Sheep', 'mythic'),
+  s('pig', 'Pig', 'mythic'),
+  s('cat', 'Cat', 'mythic'),
+  s('dog', 'Dog', 'mythic'),
+  s('goat', 'Goat', 'mythic'),
+  s('raccoon', 'Raccoon', 'mythic'),
+  s('penguin', 'Penguin', 'mythic'),
+  s('owl', 'Owl', 'mythic'),
+  s('otter', 'Otter', 'mythic'),
+  s('beaver', 'Beaver', 'mythic'),
+  s('capybara', 'Capybara', 'mythic'),
+  s('axolotl', 'Axolotl', 'mythic'),
+  s('parrot', 'Parrot', 'mythic'),
+  s('koala', 'Koala', 'mythic'),
+  // Epic (third tier, pink)
+  s('horse', 'Horse', 'epic'),
+  s('cow', 'Cow', 'epic'),
+  s('deer', 'Deer', 'epic'),
+  s('fox', 'Fox', 'epic'),
+  s('wolf', 'Wolf', 'epic'),
+  s('bear', 'Bear', 'epic'),
+  s('panda', 'Panda', 'epic'),
+  s('redpanda', 'Red Panda', 'epic'),
+  s('peacock', 'Peacock', 'epic'),
+  // Legendary, the top tier (every Legendary species has the sparkle effect; the unicorn adds rainbow bursts)
+  s('unicorn', 'Unicorn', 'legendary', 'rainbow'),
+  s('tiger', 'Tiger', 'legendary', 'sparkle'),
 ];
 
 const BY_ID = new Map(CATALOG.map((a) => [a.id, a]));

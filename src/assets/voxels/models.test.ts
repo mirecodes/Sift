@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CATALOG } from '../../domain/animals/catalog';
 import { voxelModels } from './index';
 
-const HEIGHT_BY_TIER = { common: [3, 5], epic: [5, 7], legendary: [7, 10], mythic: [10, 12] } as const;
+const HEIGHT_BY_TIER = { common: [3, 5], mythic: [5, 7], epic: [7, 10], legendary: [10, 12] } as const;
 
 describe('voxel models (DESIGN.md 16)', () => {
   it('has a model for every species and no extras', () => {
@@ -13,9 +13,9 @@ describe('voxel models (DESIGN.md 16)', () => {
     const model = voxelModels[species.modelId]!;
     const [W, H, D] = model.size;
 
-    it('fits inside one tile (at most 6 voxels wide and deep)', () => {
+    it('fits inside one tile (at most 6 wide; 6 deep, or 8 for Legendary and Mythic, ADR-025)', () => {
       expect(W).toBeLessThanOrEqual(6);
-      expect(D).toBeLessThanOrEqual(6);
+      expect(D).toBeLessThanOrEqual(species.tier === 'legendary' || species.tier === 'epic' ? 8 : 6);
     });
 
     it('has a height that matches its tier', () => {
@@ -37,7 +37,7 @@ describe('voxel models (DESIGN.md 16)', () => {
 
     it('respects the palette budget and has an eye', () => {
       const colors = Object.values(model.palette);
-      expect(colors.length).toBeLessThanOrEqual(species.tier === 'mythic' ? 8 : 6);
+      expect(colors.length).toBeLessThanOrEqual(species.tier === 'legendary' ? 8 : 6);
       expect(colors.map((c) => c.toUpperCase())).toContain('#1E1E1E');
     });
 

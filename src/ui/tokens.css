@@ -90,18 +90,18 @@
   --tier-ink: var(--color-ink);
   --tier-border: var(--color-hairline);
 }
+[data-tier='mythic'] {
+  --tier-fill: var(--color-accent-blue);
+  --tier-ink: var(--color-on-primary);
+  --tier-border: transparent;
+}
 [data-tier='epic'] {
-  --tier-fill: var(--color-accent-purple);
+  --tier-fill: var(--color-accent-pink);
   --tier-ink: var(--color-on-primary);
   --tier-border: transparent;
 }
 [data-tier='legendary'] {
   --tier-fill: var(--color-accent-orange);
-  --tier-ink: var(--color-on-primary);
-  --tier-border: transparent;
-}
-[data-tier='mythic'] {
-  --tier-fill: var(--color-accent-pink);
   --tier-ink: var(--color-on-primary);
   --tier-border: transparent;
 }

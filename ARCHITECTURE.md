@@ -141,9 +141,11 @@ From lowest to highest:
 | Tier | Description |
 |---|---|
 | Common | Everyday small land animals |
-| Epic | Larger or less common everyday animals |
-| Legendary | Impressive real-world animals |
-| Mythic | Fantasy animal (only one species) |
+| Mythic | Larger or less common everyday animals |
+| Epic | Impressive real-world animals |
+| Legendary | The top tier: the fantasy unicorn and the tiger |
+
+> Tier names were reordered in ADR-026 and ADR-027. The rank order is Common, Mythic, Epic, Legendary (Legendary is the highest).
 
 ### 5.3 Tier Probabilities
 
@@ -154,9 +156,9 @@ From lowest to highest:
 | Tier | At 25 min | At 60 min (max) |
 |---|---|---|
 | Common | 60% | 50% |
-| Epic | 28% | 32% |
-| Legendary | 10% | 14% |
-| Mythic | 2% | 4% |
+| Mythic | 28% | 32% |
+| Epic | 10% | 14% |
+| Legendary | 2% | 4% |
 
 ```ts
 // t = 0 at 25 min, t = 1 at 60 min
@@ -173,12 +175,12 @@ const p = lerp(P_AT_25, P_AT_60, t); // per tier, sums to 1
 | Tier | Animals | Count |
 |---|---|---|
 | Common | Chick, Rabbit, Duck, Hamster, Squirrel, Hedgehog, Mouse, Frog, **Fish**, Snail, Ladybug, Bee, Butterfly, Beetle, Turtle, Crab, Starfish, Mole, Sparrow, Pigeon, Hen, Guinea Pig, Lizard, Bat, Ferret | 25 |
-| Epic | Sheep, Pig, Cat, Dog, Goat, Raccoon, Penguin, Owl, Otter, Beaver, Capybara, Axolotl, Parrot, Koala | 14 |
-| Legendary | Horse, Cow, Deer, Fox, Wolf, Bear, Panda, Red Panda, Peacock | 9 |
-| Mythic | **Unicorn**, **Tiger** | 2 |
+| Mythic | Sheep, Pig, Cat, Dog, Goat, Raccoon, Penguin, Owl, Otter, Beaver, Capybara, Axolotl, Parrot, Koala | 14 |
+| Epic | Horse, Cow, Deer, Fox, Wolf, Bear, Panda, Red Panda, Peacock | 9 |
+| Legendary | **Unicorn**, **Tiger** | 2 |
 
 - **Fish:** a flopping fish that hops in place on the grass (a fun, comedic animation). Tier placement is `[ASSUMPTION]`.
-- **Mythic:** Unicorn (fantasy animal, rainbow mane) and Tiger (orange with a forehead 王 mark). Both share the Mythic sparkle effect so the tier reads at a glance.
+- **Legendary (top tier):** Unicorn (fantasy animal, rainbow mane) and Tiger (orange with a forehead 王 mark). Both share the Legendary sparkle effect so the tier reads at a glance.
 - All other animals are real-world animals (insects, birds and sea creatures included).
 - The catalog is static data: `src/domain/animals/catalog.ts`
 - Each entry: `id`, `name`, `tier`, `modelId`, `idleAnimation`, `footprint` (tiles occupied).
@@ -249,7 +251,7 @@ const p = lerp(P_AT_25, P_AT_60, t); // per tier, sums to 1
   };
   ```
 - At runtime, `VoxelModel` → merged `BufferGeometry` (hidden faces culled).
-- Size guideline: Common 3–5 voxels tall → Mythic 10–12 voxels tall (higher tiers are larger and more detailed).
+- Size guideline: Common 3–5 voxels tall → Legendary 10–12 voxels tall (higher tiers are larger and more detailed).
 - Blocks are defined the same way.
 
 ---
@@ -306,7 +308,7 @@ Browser APIs are never called directly; they go through interfaces so the app ca
 ## 9. Data Model
 
 ```ts
-type Tier = 'common' | 'epic' | 'legendary' | 'mythic';
+type Tier = 'common' | 'mythic' | 'epic' | 'legendary'; // lowest to highest
 
 interface Settings {
   focusMinutes: number;      // default 25, range 5–60 [ASSUMPTION]

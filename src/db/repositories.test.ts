@@ -1,4 +1,5 @@
 import 'fake-indexeddb/auto';
+import Dexie from 'dexie';
 import { describe, expect, it } from 'vitest';
 import { createDexieStorage } from './repositories';
 import { SiftDB } from './schema';
@@ -56,5 +57,21 @@ describe('dexie storage', () => {
     const loaded = await s.load();
     expect(loaded.sessions).toEqual([]);
     expect(loaded.phase).toBeUndefined();
+  });
+
+  it('renames stored tiers when upgrading from schema 1 (ADR-026, ADR-027)', async () => {
+    const old = new Dexie('tier-swap');
+    old.version(1).stores({ kv: 'key', sessions: 'id, startedAt', animals: 'id, acquiredAt' });
+    await old.table('animals').bulkAdd([
+      { ...animal, id: 'top', tier: 'mythic' },
+      { ...animal, id: 'third', tier: 'legendary' },
+      { ...animal, id: 'second', tier: 'epic' },
+    ]);
+    old.close();
+
+    const { animals } = await createDexieStorage(new SiftDB('tier-swap')).load();
+    const tierOf = (id: string) => animals.find((a) => a.id === id)?.tier;
+    // Schema 1 top tier 'mythic' is now 'legendary', the third 'legendary' is 'epic', the second 'epic' is 'mythic'.
+    expect([tierOf('top'), tierOf('third'), tierOf('second')]).toEqual(['legendary', 'epic', 'mythic']);
   });
 });

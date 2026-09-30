@@ -67,10 +67,10 @@ Surface fills, badges, and indicators only. **Never button backgrounds. Never ad
 
 | Token | Value | Sift usage |
 |---|---|---|
-| `--color-accent-purple` | `#7A3DFF` | Epic tier |
-| `--color-accent-orange` | `#FF6B00` | Legendary tier; Overtime badge |
-| `--color-accent-pink` | `#ED52CB` | Mythic tier |
-| `--color-accent-blue` | `#3B89FF` | Reserved |
+| `--color-accent-purple` | `#7A3DFF` | Reserved (was the Epic tier before ADR-027) |
+| `--color-accent-orange` | `#FF6B00` | Legendary tier (the top tier); Overtime badge |
+| `--color-accent-pink` | `#ED52CB` | Epic tier |
+| `--color-accent-blue` | `#3B89FF` | Mythic tier |
 | `--color-accent-blue-info` | `#146EF5` | Info badge |
 | `--color-accent-green` | `#00D722` | Success indicator (reserved) |
 | `--color-accent-yellow` | `#FFAE13` | Warning (reserved) |
@@ -81,9 +81,11 @@ Surface fills, badges, and indicators only. **Never button backgrounds. Never ad
 | Tier | Card / badge fill | Text |
 |---|---|---|
 | Common | `--color-canvas` + 1px `--color-hairline` | `--color-ink` |
-| Epic | `--color-accent-purple` | `--color-on-primary` |
+| Mythic | `--color-accent-blue` | `--color-on-primary` |
+| Epic | `--color-accent-pink` | `--color-on-primary` |
 | Legendary | `--color-accent-orange` | `--color-on-primary` |
-| Mythic | `--color-accent-pink` | `--color-on-primary` |
+
+Rank order, lowest to highest: Common (white), Mythic (blue), Epic (pink), Legendary (orange).
 
 - No gradients in the UI. (The unicorn's rainbow effects belong to Part II.)
 - Tier is never conveyed by color alone; always show the tier name.
@@ -463,10 +465,11 @@ export const chick: VoxelModel = {
 
 ### 16.2 Scale
 - Animal model voxel = **1/6 block** in model space. On the island, animals are drawn at **0.25x** (world voxel = 1/24 block), so a 6-voxel-wide animal is about 1/4 of a block wide; smaller and larger species keep their relative sizes. The Break reward card shows the model at full size.
-- Height by tier: Common 3–5 voxels, Epic 5–7, Legendary 7–10, Mythic 10–12.
+- Height by tier: Common 3–5 voxels, Mythic 5–7, Epic 7–10, Legendary 10–12.
+- Width is at most 6 voxels. Depth is at most 6, or 8 for Epic and Legendary so bulky animals (Tiger, Bear, Horse, Cow) get a longer body (ADR-025).
 
 ### 16.3 Style
-- Max 6 palette colors per animal (Mythic up to 8).
+- Max 6 palette colors per animal (Legendary up to 8).
 - Flat colors, no textures on animals.
 - Eyes: 1 voxel `#1E1E1E`, optional 1-voxel highlight.
 - Rounded silhouettes from stepped voxels; avoid thin 1-voxel limbs.
@@ -485,7 +488,8 @@ export const chick: VoxelModel = {
 - Animal idle: turn in place, short hop, move one tile; randomized intervals 3–8s.
 - **Poke:** clicking an animal (Home and Break only, never Focus) cancels its current idle action, shows a white voxel speech bubble with a dark `!` (`#1E1E1E`) above its head for 1.2s, and immediately plays exactly one idle action (turn, hop, shuffle, or flop for the fish). The bubble faces the camera and follows hops. Reduced motion: bubble only, no action.
 - **Fish:** flops in place (squash-and-stretch hop, side tilt every 2–4s).
-- **Mythic (Unicorn, Tiger):** sparkle particles (max 8), shared by every Mythic species. The unicorn also has a rainbow mane. Gradients allowed here only.
+- **Butterfly (`flutter`):** flat design. The model is a 2-wide body plus flat wings spread in the horizontal plane (the isometric camera sees it from above). In the world the wings are separate meshes hinged at the body: they flap continuously (about 3 Hz, angle 0.15 to 0.85 rad, folded up when asleep) while the butterfly flies 0.6 block above the ground along random waypoints within 1.2 tiles of its tile (0.8 blocks/s, facing its heading, altitude bobbing), its blob shadow staying on the ground. Poke: new waypoint at once and faster flapping for 1.2s. Focus slows it by `focusAnimalTimeScale` like every animal. Reduced motion: wings static at 0.3 rad, no wandering. The Break card and Collection show the rest pose (wings flat).
+- **Legendary (Unicorn, Tiger):** sparkle particles (max 8), shared by every Legendary species. The unicorn also has a rainbow mane and, every 2 to 5 seconds, a rainbow burst (`rainbow` idle): 14 small cubes in the rainbow colors (`#FF5A5F`, `#FFA24D`, `#FFE14D`, `#5ED67A`, `#4DA6FF`, `#8E6BFF`, `#FF8AD8`) pop out around its body, arc up and fall back while shrinking over about 0.9s. Slowed by `focusAnimalTimeScale` like every animal; none with reduced motion. Gradients allowed here only.
 - **Species added in ADR-023** follow 16.2 to 16.3 unchanged (same tier heights, at most 6 wide and deep, palette budget). Models are symmetric where possible (`boxM`) and keep limbs, wings and tails as separate voxel groups so the idle hop, turn and shuffle read well. The Tiger is orange with black stripes, a white muzzle and a forehead `王` mark (palette: orange, `#1E1E1E`, white, pink nose).
 - `prefers-reduced-motion`: disable bobbing, idle hops, and camera moves.
 

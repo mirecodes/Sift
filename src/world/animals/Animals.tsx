@@ -1,11 +1,11 @@
 import { useFrame, type ThreeEvent } from '@react-three/fiber';
 import { memo, useMemo, useRef } from 'react';
-import { CircleGeometry, Color, Group, MeshBasicMaterial, MeshLambertMaterial, BoxGeometry } from 'three';
+import { CircleGeometry, Color, Group, Mesh, MeshBasicMaterial, MeshLambertMaterial, BoxGeometry } from 'three';
 import { config } from '../../domain/config';
 import { getSpecies } from '../../domain/animals/catalog';
 import type { PlacedAnimal } from '../../domain/types';
 import { palette } from '../palette';
-import { animalGeometry, modelById, VOXEL_SIZE } from '../voxel/geometry';
+import { animalGeometry, flutterParts, modelById, VOXEL_SIZE } from '../voxel/geometry';
 import { HUT_APPROACH, HUT_DOOR } from '../props/Camp';
 import { FIRE_TILE, HUT_TILE } from '../../domain/island/island';
 import type { WorldMode } from '../types';
@@ -22,6 +22,11 @@ const bubbleBox = new BoxGeometry(1, 1, 1);
 const bubbleWhite = new MeshBasicMaterial({ color: '#FFFFFF' });
 const bubbleInk = new MeshBasicMaterial({ color: '#1E1E1E' });
 const BUBBLE_MS = 1.2;
+// Butterfly flight (DESIGN.md 18): altitude in model units (0.6 block at 0.25x), wander radius and speed in blocks.
+const FLY_Y = 2.4;
+const FLY_RANGE = 1.2;
+const FLY_SPEED = 0.8;
+const FLAP_HZ = 3;
 const hitMaterial = new MeshBasicMaterial({ visible: false });
 
 const rand = (min: number, max: number) => min + Math.random() * (max - min);
@@ -113,6 +118,11 @@ const AnimalInstance = memo(function AnimalInstance({ ground, animal, timeScale,
   const outer = useRef<Group>(null);
   const inner = useRef<Group>(null);
   const bubbleRef = useRef<Group>(null);
+  const hitRef = useRef<Mesh>(null);
+  const wingL = useRef<Group>(null);
+  const wingR = useRef<Group>(null);
+  const flutter = species.idleAnimation === 'flutter';
+  const parts = useMemo(() => (flutter ? flutterParts() : undefined), [flutter]);
   const scaleRef = useRef(timeScale);
   scaleRef.current = timeScale;
 
@@ -237,7 +247,25 @@ const AnimalInstance = memo(function AnimalInstance({ ground, animal, timeScale,
     let squashXZ = 1;
     let tilt = 0;
 
-    if (!reducedMotion && idle) {
+    if (flutter && idle && !reducedMotion) {
+      // Wander between random waypoints around the home tile; a poke (nextAt = 0) picks one at once.
+      if (s.time >= s.nextAt) {
+        s.toX = rand(-FLY_RANGE, FLY_RANGE);
+        s.toZ = rand(-FLY_RANGE, FLY_RANGE);
+        s.nextAt = s.time + rand(1.5, 3.5);
+      }
+      const dx = s.toX - s.offX;
+      const dz = s.toZ - s.offZ;
+      const dist = Math.hypot(dx, dz);
+      if (dist > 0.02) {
+        const step = Math.min(dist, FLY_SPEED * (s.clock < s.bubbleUntil ? 2.5 : 1) * dt * scaleRef.current);
+        s.offX += (dx / dist) * step;
+        s.offZ += (dz / dist) * step;
+        s.yaw += angleDiff(s.yaw, Math.atan2(dx, dz)) * Math.min(1, dt * 6);
+      }
+    }
+
+    if (!reducedMotion && idle && !flutter) {
       if (s.action === 'none' && s.time >= s.nextAt) {
         const flop = species.idleAnimation === 'flop';
         const pick = Math.random();
@@ -312,6 +340,17 @@ const AnimalInstance = memo(function AnimalInstance({ ground, animal, timeScale,
     }
     if (moving) y = Math.abs(Math.sin(s.stride)) * 0.14;
     const lie = easeInOut(Math.min(1, Math.max(0, s.lie)));
+    if (flutter) {
+      // Airborne unless asleep; wings flap, or fold up while lying down.
+      y = (FLY_Y + (reducedMotion ? 0 : Math.sin(s.clock * 2.3) * 0.35)) * (1 - lie);
+      const flap = reducedMotion ? 0.3 : 0.15 + 0.7 * (0.5 + 0.5 * Math.sin(s.clock * Math.PI * 2 * FLAP_HZ * (s.clock < s.bubbleUntil ? 1.5 : 1)));
+      const angle = flap * (1 - lie) + lie * 1.2;
+      if (wingL.current && wingR.current) {
+        wingL.current.rotation.z = -angle;
+        wingR.current.rotation.z = angle;
+      }
+      if (hitRef.current) hitRef.current.position.y = bodyH / 2 + y;
+    }
     const breath = 1 + Math.sin(s.clock * 2.2 + side) * 0.035 * lie;
     const ox = side * lie * (bodyH / 2);
     const size = spawnScale * s.appear * breath;
@@ -329,7 +368,7 @@ const AnimalInstance = memo(function AnimalInstance({ ground, animal, timeScale,
     <group ref={outer} position={[animal.tileX, ground(animal.tileX, animal.tileZ), animal.tileZ]}>
       <mesh geometry={shadowGeometry} material={shadowMaterial} position={[0, 0.005, 0]} />
       {/* Invisible hit box: animals are tiny (0.25x), so the model alone is hard to click. */}
-      <mesh material={hitMaterial} geometry={bubbleBox} position={[0, bodyH / 2, 0]} scale={[Math.max(bodyW, 1), bodyH + 0.2, Math.max(bodyW, 1)]} onClick={poke} />
+      <mesh ref={hitRef} material={hitMaterial} geometry={bubbleBox} position={[0, bodyH / 2, 0]} scale={[Math.max(bodyW, 1), bodyH + 0.2, Math.max(bodyW, 1)]} onClick={poke} />
       <group ref={bubbleRef} visible={false} rotation={[0, Math.PI / 4, 0]} scale={1.2}>
         <mesh geometry={bubbleBox} material={bubbleWhite} scale={[0.9, 0.9, 0.1]} />
         <mesh geometry={bubbleBox} material={bubbleWhite} scale={[0.2, 0.2, 0.1]} position={[0, -0.55, 0]} />
@@ -337,8 +376,21 @@ const AnimalInstance = memo(function AnimalInstance({ ground, animal, timeScale,
         <mesh geometry={bubbleBox} material={bubbleInk} scale={[0.14, 0.14, 0.04]} position={[0, -0.25, 0.07]} />
       </group>
       <group ref={inner}>
-        <mesh geometry={geometry} material={material} />
-        {species.idleAnimation === 'sparkle' && <Sparkles timeScale={timeScale} reducedMotion={reducedMotion} />}
+        {parts ? (
+          <>
+            <mesh geometry={parts.body} material={material} />
+            <group ref={wingL} position={[-VOXEL_SIZE, VOXEL_SIZE, 0]}>
+              <mesh geometry={parts.wing} material={material} position={[-VOXEL_SIZE, 0, 0]} />
+            </group>
+            <group ref={wingR} position={[VOXEL_SIZE, VOXEL_SIZE, 0]}>
+              <mesh geometry={parts.wing} material={material} position={[VOXEL_SIZE, 0, 0]} scale={[-1, 1, 1]} />
+            </group>
+          </>
+        ) : (
+          <mesh geometry={geometry} material={material} />
+        )}
+        {(species.idleAnimation === 'sparkle' || species.idleAnimation === 'rainbow') && <Sparkles timeScale={timeScale} reducedMotion={reducedMotion} />}
+        {species.idleAnimation === 'rainbow' && !reducedMotion && <RainbowBursts timeScale={timeScale} />}
       </group>
     </group>
   );
@@ -368,6 +420,58 @@ function Sparkles({ timeScale, reducedMotion }: { timeScale: number; reducedMoti
     <group ref={group}>
       {sparkMaterials.map((mat, i) => (
         <mesh key={i} geometry={sparkGeometry} material={mat} />
+      ))}
+    </group>
+  );
+}
+
+const RAINBOW = ['#FF5A5F', '#FFA24D', '#FFE14D', '#5ED67A', '#4DA6FF', '#8E6BFF', '#FF8AD8'];
+const rainbowMaterials = RAINBOW.map((c) => new MeshBasicMaterial({ color: new Color(c) }));
+const BURST_COUNT = 14;
+const BURST_LIFE = 0.9;
+const GRAVITY = 4;
+
+/** Unicorn: every 2-5s a burst of rainbow cubes pops out around the body, arcs up and falls back shrinking. */
+function RainbowBursts({ timeScale }: { timeScale: number }) {
+  const group = useRef<Group>(null);
+  const scaleRef = useRef(timeScale);
+  scaleRef.current = timeScale;
+  const s = useRef({ t: 0, nextAt: rand(1, 3), start: -1, vel: Array.from({ length: BURST_COUNT }, () => [0, 0, 0]) });
+
+  useFrame((_, delta) => {
+    const g = group.current;
+    if (!g) return;
+    const st = s.current;
+    st.t += Math.min(delta, 0.1) * scaleRef.current;
+    if (st.start < 0 && st.t >= st.nextAt) {
+      st.start = st.t;
+      for (const v of st.vel) {
+        const a = Math.random() * Math.PI * 2;
+        const r = rand(0.3, 1);
+        v[0] = Math.cos(a) * r;
+        v[1] = rand(1.2, 2.2);
+        v[2] = Math.sin(a) * r;
+      }
+    }
+    const age = st.start < 0 ? 1 : (st.t - st.start) / BURST_LIFE;
+    if (st.start >= 0 && age >= 1) {
+      st.start = -1;
+      st.nextAt = st.t + rand(2, 5);
+    }
+    g.visible = st.start >= 0;
+    if (!g.visible) return;
+    const sec = age * BURST_LIFE;
+    g.children.forEach((child, i) => {
+      const v = st.vel[i]!;
+      child.position.set(v[0]! * sec * 0.5, 1 + v[1]! * sec - 0.5 * GRAVITY * sec * sec, v[2]! * sec * 0.5);
+      child.scale.setScalar(0.06 * (1 - age));
+    });
+  });
+
+  return (
+    <group ref={group} visible={false}>
+      {Array.from({ length: BURST_COUNT }, (_, i) => (
+        <mesh key={i} geometry={sparkGeometry} material={rainbowMaterials[i % rainbowMaterials.length]} />
       ))}
     </group>
   );

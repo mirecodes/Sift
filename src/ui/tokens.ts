@@ -11,13 +11,14 @@ export const colors = {
   accentPurple: '#7a3dff',
   accentOrange: '#ff6b00',
   accentPink: '#ed52cb',
+  accentBlue: '#3b89ff',
 } as const;
 
 export const motion = { fast: 150, base: 300, slow: 600, scene: 1000 } as const;
 
 export const tierFill: Record<Tier, string> = {
   common: colors.canvas,
-  epic: colors.accentPurple,
+  mythic: colors.accentBlue,
+  epic: colors.accentPink,
   legendary: colors.accentOrange,
-  mythic: colors.accentPink,
 };

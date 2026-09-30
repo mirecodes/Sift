@@ -9,6 +9,18 @@
 
 ## [Unreleased]
 
+- 2026-09-30 · **Changed** — Tier order is now Common, Mythic (blue), Epic (pink), Legendary (orange): Sheep to Koala are Mythic, Horse to Peacock are Epic, Unicorn and Tiger stay Legendary. Probabilities, chimes and size limits follow the rank; stored animals are migrated (ADR-027).
+
+- 2026-09-30 · **Changed** — Legendary and Mythic swapped names: Legendary is now the top tier (Unicorn, Tiger; pink) and Mythic the one below (Horse to Peacock; orange). Probabilities, colors, chimes and size limits follow the rank; stored animals are migrated (ADR-026).
+
+- 2026-09-30 · **Added** — Unicorn: every few seconds a burst of rainbow-colored particles pops out around it.
+
+- 2026-09-30 · **Changed** — Tiger, Bear, Cow and Horse have longer bodies (8 voxels deep instead of 6); Legendary and Mythic models may now be 8 deep (ADR-025).
+
+- 2026-09-30 · **Added** — `testMode.allSpecies` in `config/app.yaml`: places every species on the island at startup (the island grows to fit them); off by default.
+
+- 2026-09-30 · **Changed** — Butterfly is redrawn flat (wings spread horizontally) and in the world it flaps its wings and flies around above the island; poking it makes it dart off (ADR-024).
+
 - 2026-09-30 · **Added** — 30 new animals (ADR-023): Common Snail, Ladybug, Bee, Butterfly, Beetle, Turtle, Crab, Starfish, Mole, Sparrow, Pigeon, Hen, Guinea Pig, Lizard, Bat, Ferret; Epic Penguin, Owl, Otter, Beaver, Capybara, Axolotl, Parrot, Koala; Legendary Wolf, Bear, Panda, Red Panda, Peacock; Mythic Tiger (with the shared Mythic sparkle). Catalog is now 50 species.
 
 - 2026-09-30 · **Added** — Click an animal to poke it: a `!` speech bubble appears above it and it immediately performs exactly one idle action (ADR-022).

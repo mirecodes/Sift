@@ -5,9 +5,11 @@ import { platform } from '../platform';
 import { createAppStore, type AppState } from './appStore';
 
 const { testMode } = runtimeConfig;
-// Random subset chosen once per page load.
+// Every species, or a random subset chosen once per page load.
 const testSpecies = testMode.enabled
-  ? [...CATALOG].sort(() => Math.random() - 0.5).slice(0, testMode.speciesCount)
+  ? testMode.allSpecies
+    ? [...CATALOG]
+    : [...CATALOG].sort(() => Math.random() - 0.5).slice(0, testMode.speciesCount)
   : undefined;
 
 export const appStore = createAppStore({
