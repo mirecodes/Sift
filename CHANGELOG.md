@@ -9,6 +9,10 @@
 
 ## [Unreleased]
 
+- 2026-09-30 · **Changed** — Home wheel zoom limit raised from 1.4× to 2.1× (1.5× closer) so the island can be inspected in more detail.
+
+- 2026-09-30 · **Changed** — Hut is now a forest log cabin about 1.5 blocks wide: stacked-log walls, stepped wooden gable roof, stone chimney with night smoke, framed door and glowing window; the animals' door approach point moved with it.
+
 - 2026-09-30 · **Fixed** — Stream bends (including the last tile before the rim fall) are clean quarter circles of radius 0.5 instead of corner-cut polylines that pinched the ribbon into a zigzag.
 
 - 2026-09-30 · **Fixed** — Stream end: the water now ends at the first rim tile it reaches (after at least 4 tiles) and falls straight ahead, or turns once toward the most outward open side, instead of staircasing along the rim.
