@@ -63,8 +63,9 @@ describe('pickSpecies', () => {
     }
   });
 
-  it('mythic is always the unicorn', () => {
-    expect(pickSpecies('mythic', () => 0.5).id).toBe('unicorn');
+  it('mythic is the unicorn or the tiger', () => {
+    expect(pickSpecies('mythic', () => 0).id).toBe('unicorn');
+    expect(pickSpecies('mythic', () => 0.99).id).toBe('tiger');
     expect(getSpecies('fish').tier).toBe('common');
   });
 });

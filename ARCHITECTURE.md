@@ -73,7 +73,7 @@ Every design decision follows the principles below. When features conflict, thes
 | **Focus** | Fullscreen. Dark background, large centered timer, dimmed island behind it |
 | **Break** | Break timer, reward reveal, go home / start focus immediately |
 | **Settings** | Focus/break durations, sound, etc. |
-| **Collection** `[ASSUMPTION]` | Catalog of collected animals (20 species) |
+| **Collection** `[ASSUMPTION]` | Catalog of collected animals (50 species) |
 
 ### 4.2 Flow
 
@@ -168,18 +168,18 @@ const p = lerp(P_AT_25, P_AT_60, t); // per tier, sums to 1
 - After the tier roll, the species is chosen uniformly at random within that tier.
 - Tier selection and species selection are pure functions with an injectable RNG (for testing).
 
-### 5.4 Animal Catalog (20 species, draft)
+### 5.4 Animal Catalog (50 species, draft)
 
 | Tier | Animals | Count |
 |---|---|---|
-| Common | Chick, Rabbit, Duck, Hamster, Squirrel, Hedgehog, Mouse, Frog, **Fish** | 9 |
-| Epic | Sheep, Pig, Cat, Dog, Goat, Raccoon | 6 |
-| Legendary | Horse, Cow, Deer, Fox | 4 |
-| Mythic | **Unicorn** | 1 |
+| Common | Chick, Rabbit, Duck, Hamster, Squirrel, Hedgehog, Mouse, Frog, **Fish**, Snail, Ladybug, Bee, Butterfly, Beetle, Turtle, Crab, Starfish, Mole, Sparrow, Pigeon, Hen, Guinea Pig, Lizard, Bat, Ferret | 25 |
+| Epic | Sheep, Pig, Cat, Dog, Goat, Raccoon, Penguin, Owl, Otter, Beaver, Capybara, Axolotl, Parrot, Koala | 14 |
+| Legendary | Horse, Cow, Deer, Fox, Wolf, Bear, Panda, Red Panda, Peacock | 9 |
+| Mythic | **Unicorn**, **Tiger** | 2 |
 
 - **Fish:** a flopping fish that hops in place on the grass (a fun, comedic animation). Tier placement is `[ASSUMPTION]`.
-- **Unicorn:** the only fantasy animal, the sole Mythic species. Should have a distinctive effect (e.g. subtle sparkle particles, rainbow mane).
-- All other animals are everyday land animals.
+- **Mythic:** Unicorn (fantasy animal, rainbow mane) and Tiger (orange with a forehead 王 mark). Both share the Mythic sparkle effect so the tier reads at a glance.
+- All other animals are real-world animals (insects, birds and sea creatures included).
 - The catalog is static data: `src/domain/animals/catalog.ts`
 - Each entry: `id`, `name`, `tier`, `modelId`, `idleAnimation`, `footprint` (tiles occupied).
 

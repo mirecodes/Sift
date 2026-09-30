@@ -485,7 +485,8 @@ export const chick: VoxelModel = {
 - Animal idle: turn in place, short hop, move one tile; randomized intervals 3–8s.
 - **Poke:** clicking an animal (Home and Break only, never Focus) cancels its current idle action, shows a white voxel speech bubble with a dark `!` (`#1E1E1E`) above its head for 1.2s, and immediately plays exactly one idle action (turn, hop, shuffle, or flop for the fish). The bubble faces the camera and follows hops. Reduced motion: bubble only, no action.
 - **Fish:** flops in place (squash-and-stretch hop, side tilt every 2–4s).
-- **Unicorn:** sparkle particles (max 8), rainbow mane. Gradients allowed here only.
+- **Mythic (Unicorn, Tiger):** sparkle particles (max 8), shared by every Mythic species. The unicorn also has a rainbow mane. Gradients allowed here only.
+- **Species added in ADR-023** follow 16.2 to 16.3 unchanged (same tier heights, at most 6 wide and deep, palette budget). Models are symmetric where possible (`boxM`) and keep limbs, wings and tails as separate voxel groups so the idle hop, turn and shuffle read well. The Tiger is orange with black stripes, a white muzzle and a forehead `王` mark (palette: orange, `#1E1E1E`, white, pink nose).
 - `prefers-reduced-motion`: disable bobbing, idle hops, and camera moves.
 
 ## 19. Performance

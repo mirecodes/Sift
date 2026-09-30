@@ -16,7 +16,7 @@ describe('stats', () => {
       [session('completed', 30 * 60_000), session('abandoned', 10 * 60_000), session('running'), session('completed', 60 * 60_000)],
       [animal('chick'), animal('chick'), animal('fox')],
     );
-    expect(stats).toEqual({ focusMs: 90 * 60_000, completedSessions: 2, collectedSpecies: 2, totalSpecies: 20 });
+    expect(stats).toEqual({ focusMs: 90 * 60_000, completedSessions: 2, collectedSpecies: 2, totalSpecies: 50 });
   });
 
   it('counts animals per species', () => {
