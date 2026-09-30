@@ -9,6 +9,8 @@
 
 ## [Unreleased]
 
+- 2026-09-30 · **Added** — Click an animal to poke it: a `!` speech bubble appears above it and it immediately performs exactly one idle action (ADR-022).
+
 - 2026-09-30 · **Changed** — Home wheel zoom limit raised from 1.4× to 2.1× (1.5× closer) so the island can be inspected in more detail.
 
 - 2026-09-30 · **Changed** — Hut is now a forest log cabin about 1.5 blocks wide: stacked-log walls, stepped wooden gable roof, stone chimney with night smoke, framed door and glowing window; the animals' door approach point moved with it.

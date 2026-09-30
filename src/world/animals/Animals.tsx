@@ -1,4 +1,4 @@
-import { useFrame } from '@react-three/fiber';
+import { useFrame, type ThreeEvent } from '@react-three/fiber';
 import { memo, useMemo, useRef } from 'react';
 import { CircleGeometry, Color, Group, MeshBasicMaterial, MeshLambertMaterial, BoxGeometry } from 'three';
 import { config } from '../../domain/config';
@@ -16,6 +16,13 @@ const shadowMaterial = new MeshBasicMaterial({ color: palette.shadow, transparen
 const sparkGeometry = new BoxGeometry(1, 1, 1);
 const SPARK_COLORS = ['#FF9AA2', '#FFD08A', '#FFF3A3', '#A8E6B0', '#9CCBFF', '#C9A6FF', '#FFFFFF', '#FFB3E6'];
 const sparkMaterials = SPARK_COLORS.map((c) => new MeshBasicMaterial({ color: new Color(c), transparent: true, opacity: 0.95 }));
+
+// Poke bubble (DESIGN.md 18): white voxel bubble with a dark "!".
+const bubbleBox = new BoxGeometry(1, 1, 1);
+const bubbleWhite = new MeshBasicMaterial({ color: '#FFFFFF' });
+const bubbleInk = new MeshBasicMaterial({ color: '#1E1E1E' });
+const BUBBLE_MS = 1.2;
+const hitMaterial = new MeshBasicMaterial({ visible: false });
 
 const rand = (min: number, max: number) => min + Math.random() * (max - min);
 const easeInOut = (t: number) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
@@ -74,6 +81,8 @@ interface AnimState {
   stride: number;
   /** Smoothed ground height under the animal. */
   gy: number;
+  /** `clock` time until which the poke bubble shows. */
+  bubbleUntil: number;
 }
 
 /** World y of the walkable surface at a point (nearest tile). */
@@ -103,6 +112,7 @@ const AnimalInstance = memo(function AnimalInstance({ ground, animal, timeScale,
   slotRef.current = slot;
   const outer = useRef<Group>(null);
   const inner = useRef<Group>(null);
+  const bubbleRef = useRef<Group>(null);
   const scaleRef = useRef(timeScale);
   scaleRef.current = timeScale;
 
@@ -138,7 +148,18 @@ const AnimalInstance = memo(function AnimalInstance({ ground, animal, timeScale,
     returning: false,
     stride: 0,
     gy: ground(animal.tileX, animal.tileZ),
+    bubbleUntil: -1,
   });
+
+  // Poke: cancel the current action and start a new one right away (picked in the idle block below).
+  const poke = (e: ThreeEvent<MouseEvent>) => {
+    const s = state.current;
+    if (s.routine !== 'none' || s.returning || s.appear < 1) return;
+    e.stopPropagation();
+    s.action = 'none';
+    s.nextAt = 0;
+    s.bubbleUntil = s.clock + BUBBLE_MS;
+  };
 
   useFrame((_, delta) => {
     const g = outer.current;
@@ -268,6 +289,12 @@ const AnimalInstance = memo(function AnimalInstance({ ground, animal, timeScale,
       }
     }
 
+    const bubble = bubbleRef.current;
+    if (bubble) {
+      bubble.visible = idle && s.clock < s.bubbleUntil;
+      bubble.position.y = bodyH + 0.8 + y;
+    }
+
     let spawnScale = 1;
     if (s.spawnAt >= 0) {
       if (reducedMotion) s.spawnAt = -1;
@@ -301,6 +328,14 @@ const AnimalInstance = memo(function AnimalInstance({ ground, animal, timeScale,
   return (
     <group ref={outer} position={[animal.tileX, ground(animal.tileX, animal.tileZ), animal.tileZ]}>
       <mesh geometry={shadowGeometry} material={shadowMaterial} position={[0, 0.005, 0]} />
+      {/* Invisible hit box: animals are tiny (0.25x), so the model alone is hard to click. */}
+      <mesh material={hitMaterial} geometry={bubbleBox} position={[0, bodyH / 2, 0]} scale={[Math.max(bodyW, 1), bodyH + 0.2, Math.max(bodyW, 1)]} onClick={poke} />
+      <group ref={bubbleRef} visible={false} rotation={[0, Math.PI / 4, 0]} scale={1.2}>
+        <mesh geometry={bubbleBox} material={bubbleWhite} scale={[0.9, 0.9, 0.1]} />
+        <mesh geometry={bubbleBox} material={bubbleWhite} scale={[0.2, 0.2, 0.1]} position={[0, -0.55, 0]} />
+        <mesh geometry={bubbleBox} material={bubbleInk} scale={[0.14, 0.36, 0.04]} position={[0, 0.12, 0.07]} />
+        <mesh geometry={bubbleBox} material={bubbleInk} scale={[0.14, 0.14, 0.04]} position={[0, -0.25, 0.07]} />
+      </group>
       <group ref={inner}>
         <mesh geometry={geometry} material={material} />
         {species.idleAnimation === 'sparkle' && <Sparkles timeScale={timeScale} reducedMotion={reducedMotion} />}

@@ -123,6 +123,11 @@
 - Update (same day): the bank is a mesh built in `world/stream/streamMesh.ts` from the smoothed ribbon (marching squares on a 16×16 grid per tile over the distance to the ribbon edge, plus a wall to the bed), so the channel is a smooth curve, not a square notch or voxel steps. The water is opaque and narrows on tight bends, which removed the flicker from the ribbon overlapping itself under transparency. The stream starts at a spring: a round ribbon head with a fountain of white cubes. Rejected: voxel strips (still blocky), a stencil or shader cut-out (the bank would still be a flat block face).
 - Consequences: Only the first unbroken run on the island is water, so growth can extend the stream upstream. Candidate search costs ~500 traces per seed, cached per seed. The stream may be nearly straight on the smallest island when the camp leaves little room.
 
+## ADR-022: Click an animal to poke it
+- Date: 2026-09-30 · Status: Accepted (owner request)
+- Decision (DESIGN.md 18): R3F `onClick` on an invisible hit box per animal forces one idle action and shows a voxel `!` bubble for 1.2s. Disabled during Focus routines (immersion, ARCHITECTURE 1.1). Not persisted. Rejected: DOM overlay bubble (needs projecting 3D positions each frame; drei `Html` is not used, ADR-009).
+- Consequences: Partially answers Q7 (interaction, not arrangement). Animals are 0.25 block, so the hit box is larger than the model.
+
 ## ADR-019: `resetMapOnStart` runtime option
 - Date: 2026-09-30 · Status: Accepted (owner request)
 - Decision: `config/app.yaml` `resetMapOnStart: true` makes every app start roll a new island seed and delete all placed animals (`StorageAdapter.resetWorld`). Sessions, settings and the active phase are kept.
