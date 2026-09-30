@@ -235,6 +235,7 @@ const p = lerp(P_AT_25, P_AT_60, t); // per tier, sums to 1
 - Placement coordinates are stored in the DB (existing animals keep their position as the island grows).
 - Coordinates are relative to the island center (0,0), so they remain valid after expansion.
 - Idle behavior: turning in place, short hops, moving one tile, etc. `[ASSUMPTION]`.
+- Interaction: clicking an animal (not on Focus, ADR-022) shows a `!` bubble and forces one idle action. Render-only state in `world/animals/Animals.tsx`; nothing is stored.
 
 ### 6.5 Voxel Asset Generation
 

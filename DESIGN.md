@@ -483,6 +483,7 @@ export const chick: VoxelModel = {
 
 - Island bobbing: 4–6s cycle, amplitude ≤ 0.15 block.
 - Animal idle: turn in place, short hop, move one tile; randomized intervals 3–8s.
+- **Poke:** clicking an animal (Home and Break only, never Focus) cancels its current idle action, shows a white voxel speech bubble with a dark `!` (`#1E1E1E`) above its head for 1.2s, and immediately plays exactly one idle action (turn, hop, shuffle, or flop for the fish). The bubble faces the camera and follows hops. Reduced motion: bubble only, no action.
 - **Fish:** flops in place (squash-and-stretch hop, side tilt every 2–4s).
 - **Unicorn:** sparkle particles (max 8), rainbow mane. Gradients allowed here only.
 - `prefers-reduced-motion`: disable bobbing, idle hops, and camera moves.
