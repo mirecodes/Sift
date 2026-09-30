@@ -104,7 +104,7 @@ export const config = {
     /** Home camera limits. */
     azimuthLimitDeg: 30,
     zoomMin: 0.8,
-    zoomMax: 1.4,
+    zoomMax: 2.1,
     /** Focus camera pull-back factor (zoom multiplier). */
     focusZoomFactor: 0.88,
     maxPixelRatio: 2,

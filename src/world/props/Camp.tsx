@@ -16,12 +16,19 @@ import { night as nightPalette } from '../palette';
 
 const SURFACE_Y = levelTop(CAMP_LEVEL) + 0.5;
 /** Where animals enter the hut: in front of the door (+x face, toward the fire) and at the door. */
-export const HUT_APPROACH = { x: HUT_TILE.x + 1.0, z: HUT_TILE.z } as const;
-export const HUT_DOOR = { x: HUT_TILE.x + 0.5, z: HUT_TILE.z } as const;
+export const HUT_APPROACH = { x: HUT_TILE.x + 1.15, z: HUT_TILE.z } as const;
+export const HUT_DOOR = { x: HUT_TILE.x + 0.67, z: HUT_TILE.z } as const;
 
 const box = new BoxGeometry(1, 1, 1);
-const wood = new MeshLambertMaterial({ color: '#C8935F', flatShading: true });
-const roof = new MeshLambertMaterial({ color: '#B5523C', flatShading: true });
+const lambert = (color: string) => new MeshLambertMaterial({ color, flatShading: true });
+const logLight = lambert('#B98552');
+const logDark = lambert('#9A6A3E');
+const beam = lambert('#5E3B20');
+const roofLight = lambert('#8A5A36');
+const roofDark = lambert('#6F4528');
+const stone = lambert('#9A9DA3');
+const stoneDark = lambert('#6E7179');
+const smokeMaterial = new MeshBasicMaterial({ color: '#D9DCE6', transparent: true, opacity: 0 });
 const log = new MeshLambertMaterial({ color: '#6B4526', flatShading: true });
 const doorDay = new Color('#3B2A1E');
 const doorNight = new Color('#FFB050');
@@ -46,6 +53,7 @@ export function Camp({ night, reducedMotion }: { night: MutableRefObject<number>
   const flames = useRef<Group>(null);
   const glow = useRef<Mesh>(null);
   const door = useRef<Mesh>(null);
+  const smoke = useRef<Group>(null);
   const glowMaterial = useMemo(
     () => new MeshBasicMaterial({ map: glowTexture(), color: nightPalette.fire, transparent: true, blending: AdditiveBlending, depthWrite: false, opacity: 0 }),
     [],
@@ -60,6 +68,13 @@ export function Camp({ night, reducedMotion }: { night: MutableRefObject<number>
     glowMaterial.opacity = n * 0.55 * flicker;
     if (glow.current) glow.current.visible = n > 0.01;
     doorMaterial.color.copy(doorDay).lerp(doorNight, n);
+    // Chimney smoke: three puffs rise and fade in a loop, only at night (the hearth is lit).
+    smoke.current?.children.forEach((puff, i) => {
+      const p = (t * 0.35 + i / 3) % 1;
+      puff.position.set(Math.sin(t + i * 2) * 0.05 * p, p * 0.6, 0);
+      puff.scale.setScalar(0.1 + p * 0.14);
+    });
+    smokeMaterial.opacity = n * 0.5;
     const f = flames.current;
     if (f) {
       f.visible = n > 0.05;
@@ -90,12 +105,34 @@ export function Camp({ night, reducedMotion }: { night: MutableRefObject<number>
         </mesh>
       </group>
       {/* Hut */}
+      {/* Log cabin: ~1.5 blocks wide, ridge along x so the gable end (with the door) faces the fire. */}
       <group position={[HUT_TILE.x, SURFACE_Y, HUT_TILE.z]}>
-        <mesh geometry={box} material={wood} position={[0, 0.25, 0]} scale={[0.84, 0.5, 0.84]} />
-        <mesh geometry={box} material={roof} position={[0, 0.57, 0]} scale={[1.0, 0.14, 1.0]} />
-        <mesh geometry={box} material={roof} position={[0, 0.71, 0]} scale={[0.72, 0.14, 0.72]} />
-        <mesh geometry={box} material={roof} position={[0, 0.85, 0]} scale={[0.44, 0.14, 0.44]} />
-        <mesh ref={door} geometry={box} material={doorMaterial} position={[0.43, 0.17, 0]} scale={[0.03, 0.34, 0.24]} />
+        <mesh geometry={box} material={stone} position={[0, 0.04, 0]} scale={[1.4, 0.08, 1.2]} />
+        {[0, 1, 2, 3, 4, 5].map((i) => (
+          <group key={i}>
+            <mesh geometry={box} material={i % 2 ? logLight : logDark} position={[0, 0.13 + i * 0.1, 0]} scale={[1.3, 0.1, 1.0]} />
+            <mesh geometry={box} material={i % 2 ? logDark : logLight} position={[0, 0.13 + i * 0.1, 0]} scale={[1.0, 0.1, 1.1]} />
+          </group>
+        ))}
+        {[-1, 1].flatMap((sx) => [-1, 1].map((sz) => (
+          <mesh key={`${sx}${sz}`} geometry={box} material={beam} position={[sx * 0.62, 0.38, sz * 0.52]} scale={[0.1, 0.6, 0.1]} />
+        )))}
+        {[0, 1, 2, 3, 4].map((i) => (
+          <mesh key={i} geometry={box} material={i % 2 ? roofLight : roofDark} position={[0, 0.74 + i * 0.12, 0]} scale={[1.56, 0.12, 1.4 - i * 0.3]} />
+        ))}
+        <mesh geometry={box} material={roofDark} position={[0, 1.36, 0]} scale={[1.6, 0.05, 0.16]} />
+        <mesh geometry={box} material={stone} position={[-0.3, 0.63, -0.25]} scale={[0.26, 1.1, 0.26]} />
+        <mesh geometry={box} material={stoneDark} position={[-0.3, 1.2, -0.25]} scale={[0.34, 0.07, 0.34]} />
+        <group ref={smoke} position={[-0.3, 1.25, -0.25]}>
+          {[0, 1, 2].map((i) => (
+            <mesh key={i} geometry={box} material={smokeMaterial} />
+          ))}
+        </group>
+        <mesh geometry={box} material={beam} position={[0.655, 0.27, 0]} scale={[0.03, 0.5, 0.36]} />
+        <mesh ref={door} geometry={box} material={doorMaterial} position={[0.67, 0.25, 0]} scale={[0.03, 0.44, 0.28]} />
+        <mesh geometry={box} material={stone} position={[0.78, 0.03, 0]} scale={[0.22, 0.06, 0.4]} />
+        <mesh geometry={box} material={beam} position={[0.1, 0.45, 0.505]} scale={[0.34, 0.3, 0.03]} />
+        <mesh geometry={box} material={doorMaterial} position={[0.1, 0.45, 0.52]} scale={[0.26, 0.22, 0.03]} />
       </group>
     </>
   );
