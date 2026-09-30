@@ -9,6 +9,10 @@
 
 ## [Unreleased]
 
+- 2026-09-30 · **Fixed** — Stream bends (including the last tile before the rim fall) are clean quarter circles of radius 0.5 instead of corner-cut polylines that pinched the ribbon into a zigzag.
+
+- 2026-09-30 · **Fixed** — Stream end: the water now ends at the first rim tile it reaches (after at least 4 tiles) and falls straight ahead, or turns once toward the most outward open side, instead of staircasing along the rim.
+
 - 2026-09-30 · **Fixed** — Stream bank: where a bed tile's side is exposed (island rim or a lower neighbor) the bank now has a skirt down to the bed block, so it no longer looks like a thin floating sheet from the side.
 
 - 2026-09-30 · **Added** — Stream spring: the water starts in a round pool with a fountain of white droplets bursting up (ADR-021).

@@ -150,15 +150,23 @@ function build(seed: number, source: StreamContext): StreamTile[] {
  */
 export function streamRuns(seed: number, ctx: StreamContext, onIsland: (x: number, z: number) => boolean): StreamTile[][] {
   const run: StreamTile[] = [];
+  const openOf = (t: StreamTile) => DIRS.filter(([dx, dz]) => !onIsland(t.x + dx, t.z + dz));
   for (const t of build(seed, ctx)) {
-    if (onIsland(t.x, t.z)) run.push({ ...t });
-    else if (run.length) break;
+    if (!onIsland(t.x, t.z)) {
+      if (run.length) break;
+      continue;
+    }
+    run.push({ ...t });
+    // The water leaves at the first rim tile it reaches, so it never staircases along the boundary.
+    if (run.length >= MIN_LENGTH - 1 && openOf(t).length) break;
   }
   const last = run[run.length - 1];
   if (!last) return [];
-  const open = DIRS.filter(([dx, dz]) => !onIsland(last.x + dx, last.z + dz));
+  const open = openOf(last);
   const outward = ([dx, dz]: readonly [number, number]) => dx * last.x + dz * last.z;
-  const pick = open.reduce<readonly [number, number] | undefined>((b, d) => (!b || outward(d) > outward(b) ? d : b), undefined);
+  // Keep the heading when it already points off the island; otherwise turn toward the most outward open side.
+  const ahead = open.find(([dx, dz]) => dx === last.dx && dz === last.dz && outward([dx, dz]) > 0);
+  const pick = ahead ?? open.reduce<readonly [number, number] | undefined>((b, d) => (!b || outward(d) > outward(b) ? d : b), undefined);
   if (pick) [last.dx, last.dz] = pick;
   return [run];
 }
