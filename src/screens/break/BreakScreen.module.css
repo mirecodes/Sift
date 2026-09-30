@@ -1,0 +1,71 @@
+.panel {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--space-2xl) + var(--safe-bottom));
+  transform: translateX(-50%);
+  width: min(400px, calc(100% - 2 * var(--gutter)));
+  max-height: calc(100% - 2 * var(--space-lg));
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  text-align: center;
+}
+@media (min-width: 992px) {
+  .panel {
+    left: auto;
+    right: var(--space-3xl);
+    bottom: auto;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+  animation: card-in var(--motion-slow) var(--ease) both;
+  cursor: default;
+}
+.cardSkippable {
+  cursor: pointer;
+}
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.name {
+  margin: 0;
+}
+.message {
+  margin: 0;
+  color: var(--color-body);
+}
+.label {
+  margin: 0;
+  color: var(--color-body-mid);
+}
+.timer {
+  margin: 0;
+}
+.ready {
+  margin: 0;
+}
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    animation: screen-in var(--motion-fast) var(--ease) both;
+  }
+}

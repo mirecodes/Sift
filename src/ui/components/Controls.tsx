@@ -1,0 +1,78 @@
+import { useEffect, useState, type ReactNode } from 'react';
+import { clamp } from '../../domain/random';
+import { strings } from '../strings';
+import { Button } from './Button';
+import styles from './Controls.module.css';
+
+export function SettingsRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className={styles.row}>
+      <span className={`${styles.label} type-body-md`}>{label}</span>
+      {children}
+    </div>
+  );
+}
+
+interface StepperProps {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  unit: string;
+  onChange: (value: number) => void;
+}
+
+/** `stepper`: number input between − and + buttons. Typing commits on blur or Enter. */
+export function Stepper({ label, value, min, max, step, unit, onChange }: StepperProps) {
+  const [text, setText] = useState(String(value));
+  useEffect(() => setText(String(value)), [value]);
+
+  const commit = (raw: string) => {
+    const n = Number(raw);
+    const next = Number.isFinite(n) && raw.trim() !== '' ? clamp(Math.round(n), min, max) : value;
+    setText(String(next));
+    if (next !== value) onChange(next);
+  };
+
+  return (
+    <div className={styles.stepper}>
+      <Button
+        variant="secondary"
+        className={styles.stepButton}
+        aria-label={strings.aria.decrease(label)}
+        disabled={value <= min}
+        onClick={() => onChange(clamp(value - step, min, max))}
+      >
+        −
+      </Button>
+      <input
+        className={styles.input}
+        inputMode="numeric"
+        aria-label={label}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onBlur={(e) => commit(e.target.value)}
+        onKeyDown={(e) => e.key === 'Enter' && commit(e.currentTarget.value)}
+      />
+      <Button
+        variant="secondary"
+        className={styles.stepButton}
+        aria-label={strings.aria.increase(label)}
+        disabled={value >= max}
+        onClick={() => onChange(clamp(value + step, min, max))}
+      >
+        +
+      </Button>
+      <span className={`${styles.unit} type-body-sm`}>{unit}</span>
+    </div>
+  );
+}
+
+export function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button type="button" role="switch" aria-checked={checked} aria-label={label} className={styles.toggle} onClick={() => onChange(!checked)}>
+      <span className={styles.knob} />
+    </button>
+  );
+}

@@ -1,0 +1,38 @@
+/* Layer that holds a screen above the persistent canvas. Only real controls take pointer events. */
+.layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  animation: screen-in var(--motion-slow) var(--ease) both;
+}
+.layer > * {
+  pointer-events: auto;
+}
+/* Full-page canvas surface (Settings, Collection). */
+.page {
+  position: fixed;
+  inset: 0;
+  overflow-y: auto;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  animation: screen-in var(--motion-slow) var(--ease) both;
+}
+.content {
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: var(--space-lg) var(--gutter) calc(var(--space-layout-xl) + var(--safe-bottom));
+}
+.title {
+  margin: var(--space-2xl) 0 var(--space-3xl);
+}
+.eyebrow {
+  margin: var(--space-3xl) 0 var(--space-xs);
+  color: var(--color-body-mid);
+}
+@media (prefers-reduced-motion: reduce) {
+  .layer,
+  .page {
+    animation-duration: var(--motion-fast);
+  }
+}

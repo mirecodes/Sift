@@ -1,0 +1,49 @@
+import { describe, expect, it } from 'vitest';
+import { CATALOG } from '../../domain/animals/catalog';
+import { voxelModels } from './index';
+
+const HEIGHT_BY_TIER = { common: [3, 5], epic: [5, 7], legendary: [7, 10], mythic: [10, 12] } as const;
+
+describe('voxel models (DESIGN.md 16)', () => {
+  it('has a model for every species and no extras', () => {
+    expect(Object.keys(voxelModels).sort()).toEqual(CATALOG.map((a) => a.modelId).sort());
+  });
+
+  describe.each(CATALOG.map((a) => [a.id, a] as const))('%s', (_id, species) => {
+    const model = voxelModels[species.modelId]!;
+    const [W, H, D] = model.size;
+
+    it('fits inside one tile (at most 6 voxels wide and deep)', () => {
+      expect(W).toBeLessThanOrEqual(6);
+      expect(D).toBeLessThanOrEqual(6);
+    });
+
+    it('has a height that matches its tier', () => {
+      const [min, max] = HEIGHT_BY_TIER[species.tier];
+      expect(H).toBeGreaterThanOrEqual(min);
+      expect(H).toBeLessThanOrEqual(max);
+      expect(Math.max(...model.voxels.map((v) => v[1])) + 1).toBe(H);
+    });
+
+    it('keeps every voxel in bounds and uses only palette colors', () => {
+      for (const [x, y, z, c] of model.voxels) {
+        expect(x).toBeGreaterThanOrEqual(0);
+        expect(x).toBeLessThan(W);
+        expect(y).toBeLessThan(H);
+        expect(z).toBeLessThan(D);
+        expect(model.palette[c]).toBeDefined();
+      }
+    });
+
+    it('respects the palette budget and has an eye', () => {
+      const colors = Object.values(model.palette);
+      expect(colors.length).toBeLessThanOrEqual(species.tier === 'mythic' ? 8 : 6);
+      expect(colors.map((c) => c.toUpperCase())).toContain('#1E1E1E');
+    });
+
+    it('has no duplicate voxel positions', () => {
+      const keys = model.voxels.map((v) => `${v[0]},${v[1]},${v[2]}`);
+      expect(new Set(keys).size).toBe(keys.length);
+    });
+  });
+});

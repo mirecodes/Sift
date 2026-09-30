@@ -1,0 +1,14 @@
+node_modules
+dist
+*.local
+.DS_Store
+*.zip
+*.log
+.env
+.env.*
+test-results
+playwright-report
+coverage
+.vscode
+.idea
+graphify-out

@@ -1,0 +1,142 @@
+@import '@fontsource-variable/inter/wght.css';
+@import '@fontsource-variable/inconsolata/wght.css';
+@import './tokens.css';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--color-primary);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-feature-settings: 'ss01';
+  font-size: 16px;
+  line-height: 25.6px;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* Type hierarchy (DESIGN.md 3.2). Weights stay between 400 and 600. */
+.type-timer {
+  font-size: clamp(96px, 22vw, 240px);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+.type-timer-sm {
+  font-size: clamp(64px, 14vw, 120px);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+.type-display-lg {
+  font-size: 44.8px;
+  font-weight: 600;
+  line-height: 46.6px;
+}
+.type-display-md {
+  font-size: 32px;
+  font-weight: 500;
+  line-height: 41.6px;
+}
+.type-display-sm {
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 31.2px;
+}
+.type-display-xs {
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 28px;
+}
+.type-eyebrow {
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 19.5px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+.type-eyebrow-sm {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 12px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+.type-body-md {
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 25.6px;
+  letter-spacing: -0.16px;
+}
+.type-body-md-strong {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 25.6px;
+  letter-spacing: -0.16px;
+}
+.type-body-sm {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 22.4px;
+}
+.type-body-sm-strong {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 22.4px;
+}
+.type-caption {
+  font-size: 12.8px;
+  font-weight: 550;
+  line-height: 15.36px;
+}
+.type-caption-mono {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
+}
+
+/* Screens fade in (DESIGN.md 8); reduced motion keeps fades only. */
+@keyframes screen-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto !important;
+  }
+}

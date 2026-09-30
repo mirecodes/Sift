@@ -1,0 +1,15 @@
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: calc(var(--space-lg) + var(--safe-top)) calc(var(--gutter) + var(--safe-right)) var(--space-lg)
+    calc(var(--gutter) + var(--safe-left));
+}
+.actions {
+  display: flex;
+  gap: var(--space-sm);
+}
+.wordmark {
+  margin: 0;
+  color: var(--color-ink);
+}
