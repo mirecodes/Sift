@@ -1,0 +1,5 @@
+.blank {
+  position: fixed;
+  inset: 0;
+  background: var(--color-primary);
+}

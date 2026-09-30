@@ -1,0 +1,6 @@
+# Runtime settings, bundled at build time. Restart `npm run dev` after editing.
+testMode:
+  # When true, `speciesCount` random species are already on the island at
+  # startup (chosen per page load, in memory only, never saved).
+  enabled: true
+  speciesCount: 4

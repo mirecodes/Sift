@@ -1,0 +1,44 @@
+import type { ReactNode } from 'react';
+
+function Icon({ children }: { children: ReactNode }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="square" aria-hidden="true">
+      {children}
+    </svg>
+  );
+}
+
+export const CollectionIcon = () => (
+  <Icon>
+    <rect x="3.75" y="3.75" width="5" height="5" />
+    <rect x="11.25" y="3.75" width="5" height="5" />
+    <rect x="3.75" y="11.25" width="5" height="5" />
+    <rect x="11.25" y="11.25" width="5" height="5" />
+  </Icon>
+);
+
+export const SettingsIcon = () => (
+  <Icon>
+    <path d="M3 5.5h14M3 10h14M3 14.5h14" />
+    <path d="M7 3.5v4M13 8v4M8 12.5v4" strokeWidth="2" />
+  </Icon>
+);
+
+export const MoonIcon = () => (
+  <Icon>
+    <path d="M15.5 12.5A6.5 6.5 0 0 1 7.5 4.5a6.5 6.5 0 1 0 8 8z" />
+  </Icon>
+);
+
+export const SunIcon = () => (
+  <Icon>
+    <circle cx="10" cy="10" r="3.25" />
+    <path d="M10 2.5v2M10 15.5v2M2.5 10h2M15.5 10h2M4.7 4.7l1.4 1.4M13.9 13.9l1.4 1.4M4.7 15.3l1.4-1.4M13.9 6.1l1.4-1.4" />
+  </Icon>
+);
+
+export const CloseIcon = () => (
+  <Icon>
+    <path d="M4.5 4.5l11 11M15.5 4.5l-11 11" />
+  </Icon>
+);

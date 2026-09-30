@@ -1,0 +1,23 @@
+.root {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  touch-action: none;
+}
+/* Behind the canvas. On Focus it fades out so the dimmed island sits on the near-black background. */
+.sky {
+  position: absolute;
+  inset: 0;
+  transition: opacity var(--motion-scene) var(--ease);
+}
+.skyHidden {
+  opacity: 0;
+}
+.root canvas {
+  display: block;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sky {
+    transition-duration: var(--motion-fast);
+  }
+}

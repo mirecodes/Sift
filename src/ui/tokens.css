@@ -1,0 +1,107 @@
+/* Design tokens. Mirrors DESIGN.md; mirrored in tokens.ts. Never hard-code these in components. */
+:root {
+  /* Core */
+  --color-primary: #080808;
+  --color-on-primary: #ffffff;
+  --color-canvas: #ffffff;
+  --color-hairline: #d8d8d8;
+  --color-hairline-inverse: rgba(255, 255, 255, 0.16);
+  --color-overlay-focus: rgba(8, 8, 8, 0.82);
+  --color-overlay-focus-night: rgba(8, 8, 8, 0.6);
+
+  /* Text */
+  --color-ink: #080808;
+  --color-ink-strong: #222222;
+  --color-body: #363636;
+  --color-body-mid: #5a5a5a;
+  --color-mute: #898989;
+  --color-mute-soft: #ababab;
+
+  /* Accents (surfaces and badges only) */
+  --color-accent-purple: #7a3dff;
+  --color-accent-orange: #ff6b00;
+  --color-accent-pink: #ed52cb;
+  --color-accent-blue: #3b89ff;
+  --color-accent-blue-info: #146ef5;
+  --color-accent-green: #00d722;
+  --color-accent-yellow: #ffae13;
+  --color-accent-red: #ee1d36;
+
+  /* Spacing */
+  --space-xxs: 2px;
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 20px;
+  --space-2xl: 24px;
+  --space-3xl: 32px;
+  --space-layout-lg: 48px;
+  --space-layout-xl: 64px;
+  --gutter: var(--space-lg);
+  --card-padding: var(--space-2xl);
+
+  /* Radius */
+  --radius-none: 0px;
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-full: 9999px;
+
+  /* Elevation */
+  --elevation-1: 0 0 0 1px var(--color-hairline);
+  --elevation-2: 0 54px 22px rgba(0, 0, 0, 0.01), 0 30px 18px rgba(0, 0, 0, 0.04), 0 13px 13px rgba(0, 0, 0, 0.08),
+    0 3px 7px rgba(0, 0, 0, 0.09);
+  --elevation-3: 0 54px 22px rgba(0, 0, 0, 0.01), 0 30px 18px rgba(0, 0, 0, 0.04), 0 13px 13px rgba(0, 0, 0, 0.08),
+    0 3px 7px rgba(0, 0, 0, 0.12);
+  --elevation-4: 0 24px 24px rgba(0, 0, 0, 0.26), 0 6px 13px rgba(0, 0, 0, 0.29);
+
+  /* Motion */
+  --motion-fast: 150ms;
+  --motion-base: 300ms;
+  --motion-slow: 600ms;
+  --motion-scene: 1000ms;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Type */
+  --font-sans: 'Inter Variable', Inter, system-ui, -apple-system, sans-serif;
+  --font-mono: 'Inconsolata Variable', ui-monospace, monospace;
+
+  /* Focus ring color; dark screens override to white */
+  --focus-ring: var(--color-primary);
+
+  /* Safe areas (future mobile builds) */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+
+@media (min-width: 768px) {
+  :root {
+    --gutter: var(--space-3xl);
+    --card-padding: var(--space-3xl);
+  }
+}
+
+/* Tier mapping (DESIGN.md 2.4) */
+[data-tier='common'] {
+  --tier-fill: var(--color-canvas);
+  --tier-ink: var(--color-ink);
+  --tier-border: var(--color-hairline);
+}
+[data-tier='epic'] {
+  --tier-fill: var(--color-accent-purple);
+  --tier-ink: var(--color-on-primary);
+  --tier-border: transparent;
+}
+[data-tier='legendary'] {
+  --tier-fill: var(--color-accent-orange);
+  --tier-ink: var(--color-on-primary);
+  --tier-border: transparent;
+}
+[data-tier='mythic'] {
+  --tier-fill: var(--color-accent-pink);
+  --tier-ink: var(--color-on-primary);
+  --tier-border: transparent;
+}

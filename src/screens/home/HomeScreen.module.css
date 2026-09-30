@@ -1,0 +1,25 @@
+.top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+}
+.top > * {
+  pointer-events: auto;
+}
+.panel {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--space-3xl) + var(--safe-bottom));
+  transform: translateX(-50%);
+  width: min(360px, calc(100% - 2 * var(--gutter)));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  text-align: center;
+}
+.cycle {
+  margin: 0;
+  color: var(--color-body-mid);
+}
