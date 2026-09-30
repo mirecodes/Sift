@@ -73,25 +73,44 @@ export function buildStreamMesh(run: readonly StreamTile[]): StreamMeshData {
   const at = (t: StreamTile): P => [t.x, surfaceY(t.level), t.z];
   const last = run.length - 1;
 
+  // Where the previous fall ends, so a turn right after it starts beyond the foot instead of doubling back.
+  let landed: { lip: P; dx: number; dz: number; run: number } | undefined;
   run.forEach((t, k) => {
-    line.push(at(t));
+    const y = surfaceY(t.level);
     const next = run[k + 1];
     const dx = next ? next.x - t.x : t.dx;
     const dz = next ? next.z - t.z : t.dz;
-    const drop = next ? surfaceY(t.level) - surfaceY(next.level) : config.stream.edgeDrop;
+    const prev = run[k - 1];
+    const [ax, az] = prev ? [t.x - prev.x, t.z - prev.z] : [dx, dz];
+    if (ax === dx && az === dz) line.push(at(t));
+    else {
+      // A 90° bend is a quarter circle of radius 0.5 around the tile corner, from edge middle to edge middle.
+      const [px, pz] = [t.x + (dx - ax) / 2, t.z + (dz - az) / 2];
+      const [ux, uz, vx, vz] = [t.x - ax / 2 - px, t.z - az / 2 - pz, t.x + dx / 2 - px, t.z + dz / 2 - pz];
+      for (let m = 0; m <= 6; m++) {
+        const a = (m / 6) * (Math.PI / 2);
+        const p: P = [px + ux * Math.cos(a) + vx * Math.sin(a), y, pz + uz * Math.cos(a) + vz * Math.sin(a)];
+        if (landed && (p[0] - landed.lip[0]) * landed.dx + (p[2] - landed.lip[2]) * landed.dz < landed.run) continue;
+        line.push(p);
+      }
+    }
+    landed = undefined;
+    const drop = next ? y - surfaceY(next.level) : config.stream.edgeDrop;
     if (drop <= 0) return;
-    const lip: P = [t.x + dx / 2, surfaceY(t.level), t.z + dz / 2];
-    line.push(lip);
+    const lip: P = [t.x + dx / 2, y, t.z + dz / 2];
+    const tail = line[line.length - 1] as P;
+    if (Math.hypot(tail[0] - lip[0], tail[2] - lip[2]) > 1e-6) line.push(lip);
     const points = fall(lip, dx, dz, drop, k === last ? 6 : 4);
     line.push(...points);
     const foot = points[points.length - 1] as P;
+    landed = { lip, dx, dz, run: 0.4 * Math.sqrt(drop) };
     splashes.push({ x: foot[0], y: foot[1], z: foot[2], dx, dz, kind: k === last ? 'rim' : 'landing' });
   });
 
   const first = run[0] as StreamTile;
   splashes.push({ x: first.x, y: surfaceY(first.level), z: first.z, dx: first.dx, dz: first.dz, kind: 'spring' });
 
-  const pts = line.length > 1 ? smooth(line, 2) : line;
+  const pts = line.length > 1 ? smooth(line, 1) : line;
   // The ribbon has a round head at the spring: CAP + 1 extra rim vertices and a center vertex.
   const base = pts.length * 2;
   const positions = new Float32Array((base + CAP + 2) * 3);
