@@ -8,6 +8,9 @@ export const palette = {
   dirt: { top: '#9B6B43', side: '#86593A' },
   stone: { top: '#8A8F98', side: '#747983' },
   shadow: '#000000',
+  water: '#4FA8E8',
+  waterStreak: '#9AD4FF',
+  splash: '#FFFFFF',
 } as const;
 
 /**

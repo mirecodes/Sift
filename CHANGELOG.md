@@ -9,6 +9,23 @@
 
 ## [Unreleased]
 
+- 2026-09-30 · **Fixed** — Stream bank: where a bed tile's side is exposed (island rim or a lower neighbor) the bank now has a skirt down to the bed block, so it no longer looks like a thin floating sheet from the side.
+
+- 2026-09-30 · **Added** — Stream spring: the water starts in a round pool with a fountain of white droplets bursting up (ADR-021).
+- 2026-09-30 · **Changed** — Stream bank is a smooth mesh that follows the curved water edge (grass top, grassy lip, dirt wall) instead of blocks (ADR-021).
+
+- 2026-09-30 · **Fixed** — Stream: flicker on curved sections (opaque water, ribbon narrows on tight bends so it never overlaps itself); everything beside the water is now filled with grass following the curved channel instead of a square notch (ADR-021).
+
+- 2026-09-30 · **Changed** — Stream: seed-picked winding chord across the island, falls outward over the rim instead of following the boundary, stream tiles replace natural terrain (no raised banks), water is 0.7 wide with grass strips filling the tile margins at the surrounding height (ADR-021).
+
+- 2026-09-30 · **Added** — Winding stream: seeded meander, bed and banks cut into the terrain, curved water at every level step and at the island rim, white splash particles at the landings, animals kept off water (ADR-020).
+
+- 2026-09-30 · **Added** — `resetMapOnStart` option in `config/app.yaml`: new island seed and no placed animals on every start (ADR-019).
+
+- 2026-09-30 · **Changed** — Terrain generation: terraced warped noise with plains, hills and lowlands, a weak back-high tilt, and flat ground around the camp (ADR-018).
+
+- 2026-09-30 · **Changed** — Terrain: base island 7×7 and near-circular; terrain levels 1–3 are 0.5 block each; hut moved to (-2,0), one block from the campfire, door facing it (ADR-017).
+
 - 2026-09-30 14:53 · **Docs** — Condensed `CHANGELOG.md` and `DECISIONS.md` (all ADRs kept); `CLAUDE.md` now requires Edit/Write for file edits.
 - 2026-09-30 14:48 · **Added** — Git repository (`main`), first commit; `.gitignore` covers deps, build, env, logs, test output, editor and OS files, `*.zip`.
 - 2026-09-30 · **Added** — Night mode: theme toggle (top bar, persisted), night sky, lit campfire, camp (hut + campfire on reserved tiles). Focus routines: day = animals enter the hut; night = animals sleep near it (ADR-016).

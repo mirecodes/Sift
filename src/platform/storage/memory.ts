@@ -27,6 +27,10 @@ export function createMemoryStorage(): StorageAdapter {
     async saveWorld(w) {
       world = { ...w };
     },
+    async resetWorld(w) {
+      world = { ...w };
+      animals.clear();
+    },
     async commit(change: Commit) {
       if (change.session) sessions.set(change.session.id, structuredClone(change.session));
       if (change.animal) animals.set(change.animal.id, structuredClone(change.animal));

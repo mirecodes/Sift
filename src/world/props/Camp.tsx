@@ -11,13 +11,13 @@ import {
   MeshLambertMaterial,
   PointLight,
 } from 'three';
-import { CAMP_LEVEL, FIRE_TILE, HUT_TILE } from '../../domain/island/island';
+import { CAMP_LEVEL, FIRE_TILE, HUT_TILE, levelTop } from '../../domain/island/island';
 import { night as nightPalette } from '../palette';
 
-const SURFACE_Y = CAMP_LEVEL - 0.5;
-/** Where animals enter the hut: in front of the door (+z face) and at the door. */
-export const HUT_APPROACH = { x: HUT_TILE.x, z: HUT_TILE.z + 1.0 } as const;
-export const HUT_DOOR = { x: HUT_TILE.x, z: HUT_TILE.z + 0.5 } as const;
+const SURFACE_Y = levelTop(CAMP_LEVEL) + 0.5;
+/** Where animals enter the hut: in front of the door (+x face, toward the fire) and at the door. */
+export const HUT_APPROACH = { x: HUT_TILE.x + 1.0, z: HUT_TILE.z } as const;
+export const HUT_DOOR = { x: HUT_TILE.x + 0.5, z: HUT_TILE.z } as const;
 
 const box = new BoxGeometry(1, 1, 1);
 const wood = new MeshLambertMaterial({ color: '#C8935F', flatShading: true });
@@ -95,7 +95,7 @@ export function Camp({ night, reducedMotion }: { night: MutableRefObject<number>
         <mesh geometry={box} material={roof} position={[0, 0.57, 0]} scale={[1.0, 0.14, 1.0]} />
         <mesh geometry={box} material={roof} position={[0, 0.71, 0]} scale={[0.72, 0.14, 0.72]} />
         <mesh geometry={box} material={roof} position={[0, 0.85, 0]} scale={[0.44, 0.14, 0.44]} />
-        <mesh ref={door} geometry={box} material={doorMaterial} position={[0, 0.17, 0.43]} scale={[0.24, 0.34, 0.03]} />
+        <mesh ref={door} geometry={box} material={doorMaterial} position={[0.43, 0.17, 0]} scale={[0.03, 0.34, 0.24]} />
       </group>
     </>
   );

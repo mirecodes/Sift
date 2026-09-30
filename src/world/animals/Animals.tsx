@@ -340,7 +340,7 @@ function Sparkles({ timeScale, reducedMotion }: { timeScale: number; reducedMoti
 
 interface AnimalsProps {
   animals: readonly PlacedAnimal[];
-  tiles: readonly (Spot & { top: number })[];
+  tiles: readonly (Spot & { top: number; water?: boolean })[];
   mode: WorldMode;
   dark: boolean;
   timeScale: number;
@@ -354,10 +354,10 @@ const SLOT_OFFSETS = [
 ] as const;
 
 /** Sleeping spots: the tiles nearest the hut (front first), up to three animals per tile. */
-function sleepSpots(tiles: readonly Spot[]): Spot[] {
+function sleepSpots(tiles: readonly (Spot & { water?: boolean })[]): Spot[] {
   const dist = (t: Spot) => Math.hypot(t.x - HUT_TILE.x, t.z - HUT_TILE.z);
   return tiles
-    .filter((t) => !(t.x === HUT_TILE.x && t.z === HUT_TILE.z) && !(t.x === FIRE_TILE.x && t.z === FIRE_TILE.z))
+    .filter((t) => !t.water && !(t.x === HUT_TILE.x && t.z === HUT_TILE.z) && !(t.x === FIRE_TILE.x && t.z === FIRE_TILE.z))
     .sort((a, b) => dist(a) - dist(b) || b.z - a.z || a.x - b.x)
     .flatMap((t) => SLOT_OFFSETS.map(([dx, dz]) => ({ x: t.x + dx, z: t.z + dz })));
 }

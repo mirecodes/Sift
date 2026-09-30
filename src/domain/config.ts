@@ -25,7 +25,9 @@ export const config = {
     soundEnabled: true,
   },
   island: {
-    minSide: 5,
+    minSide: 7,
+    /** Height of one terrain level (levels run 1..3), in blocks. */
+    levelHeight: 0.5,
     /** Grass tiles requested per animal (includes free space). */
     tilesPerAnimal: 3,
     /** Every tile within this many tiles of the center is preferred for placement. */
@@ -34,8 +36,42 @@ export const config = {
     coneSlope: 1.6,
     /** Chance that a column with 3+ layers ends one layer early (natural gaps). */
     columnShortenChance: 0.25,
+    terrain: {
+      /** Height units per tile that raise the back (-x, -z) and lower the front; a tendency, not a rule. */
+      tilt: 0.1,
+      /** Strength of the noise relative to the tilt. */
+      noise: 0.9,
+      /** Heights above `hill` become level 3, below `lowland` level 1; the band between is plains (level 2). */
+      hill: 0.45,
+      lowland: -0.5,
+      /** Ground is fully flat within `flatRadius` tiles of the camp and blends back to natural by `blendRadius`. */
+      flatRadius: 2.5,
+      blendRadius: 4.5,
+    },
     /** Max random inset of the rounded-square outline, in tiles. */
     outlineJitter: 0.45,
+  },
+  stream: {
+    /** Lateral offsets (tiles from the center) of the candidate chords the stream is picked from. */
+    offsets: [-1.75, -1.25, -0.75, 0, 0.75, 1.25, 1.75],
+    /** Meander phases tried per chord. */
+    variants: 8,
+    /** Path length in blocks and sideways meander amplitude in tiles. */
+    length: 30,
+    meander: 0.8,
+    /** Bed depth below the bank surface and water thickness above the bed, in blocks. */
+    bedDepth: 0.25,
+    waterDepth: 0.12,
+    /** Stream width in blocks (the rest of each tile is bank at the surrounding height), and the drop where the stream leaves the rim. */
+    width: 0.7,
+    edgeDrop: 2.5,
+    /** Flow streak speed (blocks/s), splash particles per fall and their life (s). */
+    flowSpeed: 0.6,
+    splashCount: 12,
+    splashLifeS: 0.8,
+    /** The spring where the stream starts: particles per burst cycle and their life (s). */
+    springCount: 22,
+    springLifeS: 1.1,
   },
   ui: {
     holdToAbandonMs: 1500,

@@ -16,6 +16,7 @@ export const appStore = createAppStore({
   rng: () => Math.random(),
   uuid: () => crypto.randomUUID(),
   testSpecies,
+  resetMap: runtimeConfig.resetMapOnStart,
 });
 
 export function useApp<T>(selector: (state: AppState) => T): T {

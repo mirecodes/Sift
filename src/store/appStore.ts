@@ -26,6 +26,8 @@ export interface AppDeps {
   uuid: () => string;
   /** Test mode: these species start on the island (in memory only, never persisted). */
   testSpecies?: AnimalSpecies[];
+  /** Start with a new island seed and no placed animals (stored animals are deleted). */
+  resetMap?: boolean;
 }
 
 export interface AppState {
@@ -122,16 +124,18 @@ export function createAppStore(initialDeps: AppDeps) {
 
       const settings = sanitizeSettings(loaded.settings);
       let world = loaded.world;
-      if (!world) {
+      let stored = loaded.animals;
+      if (deps.resetMap || !world) {
         world = { seed: Math.floor(deps.rng() * 2 ** 31) };
-        await deps.storage.saveWorld(world).catch(() => undefined);
+        if (deps.resetMap) stored = [];
+        await deps.storage.resetWorld(world).catch(() => undefined);
       }
 
       const phase = loaded.phase ?? IDLE;
       const rewardId = phase.kind === 'break' ? phase.rewardId : undefined;
-      const revealPending = rewardId && loaded.animals.some((a) => a.id === rewardId) ? rewardId : null;
+      const revealPending = rewardId && stored.some((a) => a.id === rewardId) ? rewardId : null;
 
-      const animals = [...loaded.animals];
+      const animals = [...stored];
       for (const species of deps.testSpecies ?? []) {
         const occupied = animals.map((a) => ({ x: a.tileX, z: a.tileZ }));
         const tile = pickPlacementTile(islandTiles(world.seed, islandSide(animals.length + 1)), occupied, deps.rng);

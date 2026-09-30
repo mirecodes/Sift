@@ -101,3 +101,29 @@
 - Date: 2026-09-30 · Status: Proposed
 - Decision (DESIGN.md 15.4): persisted `Settings.theme` (`light`|`dark`) with a top-bar toggle. Campfire on (0,0), hut on (-1,0) facing +z, always present and excluded from animal placement (older saved animals may overlap). Theme at Focus start picks the routine (day: into the hut; night: sleep nearby); theme is locked during Focus. Night Focus overlay 0.6 vs 0.82.
 - Consequences: Straight-line paths may clip the hut; pathfinding later. Rejected: hiding hut/pit in light mode, 2-tile hut.
+
+## ADR-017: Circular 7×7 island, half-block terrain levels, hut faces the fire
+- Date: 2026-09-30 · Status: Accepted (owner request) · Supersedes the hut placement in ADR-016
+- Decision: Minimum side 7; outline uses Euclidean distance (near-circular) instead of a rounded square. Terrain stays level 1–3 but one level is 0.5 block (`config.island.levelHeight`): a full base block plus half-height slabs. Hut on (-2,0) with one empty tile to the fire on (0,0), door facing +x toward the fire.
+- Consequences: Blocks get an `h` (height) field; instances scale in y. Stored animal coordinates stay valid (shapes remain monotone), but animals saved on the new hut tile may overlap it.
+
+## ADR-018: Terraced noise terrain with a flat camp
+- Date: 2026-09-30 · Status: Accepted (owner request)
+- Decision: Terrain height = domain-warped fBm + a weak back-high tilt (`config.island.terrain`), blended toward level 2 around the camp by a smoothstep, then terraced with thresholds so a wide middle band is plains and level 3 / level 1 form hills / lowlands. The back-high trend is a tendency, not a rule.
+- Consequences: Still a pure per-coordinate function, so islands stay monotone and deterministic. Tests scan many seeds for flat camp surroundings and no cliffs above one level.
+
+## ADR-020: Seed-only winding stream with curved falls and splash
+- Date: 2026-09-30 · Status: Accepted (owner request) · Re-adds the stream removed earlier
+- Decision (DESIGN.md 15.5): the stream path and its water levels (2 → 1 at a seeded row) depend on the seed only. Terrain around it is clamped (bed cut, banks in [L, L+1]) so tests for flat camp and ≤ 1-level cliffs still hold. The water is one smoothed ribbon mesh (Chaikin corner cutting on the tile path, parabolic falls); splash is stateless instanced cubes. Rejected: water as voxel blocks (blocky bends, no curved falls), terrain-following levels (may give no falls at all), a particle system with per-frame state.
+- Consequences: Water tiles are excluded from placement; animals saved earlier may overlap water, and Focus walking paths may cross it (same limits as ADR-016). The stream needs `x ≥ 1`, so the camp flat area is untouched.
+
+## ADR-021: Stream replaces natural terrain; chosen chord, outward rim fall, bank strips
+- Date: 2026-09-30 · Status: Accepted (owner request) · Supersedes the path, level and bank rules of ADR-020
+- Decision (DESIGN.md 15.5): no bank clamping or raised terrain; stream tiles are natural tiles turned into water (bed cut 0.25, level never rises downstream). The path is the best-scoring wobbling chord (seed only), so it winds, avoids the camp and does not run along the rim; at the rim the last tile falls over the missing neighbor pointing most away from the center. The water is 0.7 wide and everything else in a bed tile is filled with grass strips at the surrounding height.
+- Update (same day): the bank is a mesh built in `world/stream/streamMesh.ts` from the smoothed ribbon (marching squares on a 16×16 grid per tile over the distance to the ribbon edge, plus a wall to the bed), so the channel is a smooth curve, not a square notch or voxel steps. The water is opaque and narrows on tight bends, which removed the flicker from the ribbon overlapping itself under transparency. The stream starts at a spring: a round ribbon head with a fountain of white cubes. Rejected: voxel strips (still blocky), a stencil or shader cut-out (the bank would still be a flat block face).
+- Consequences: Only the first unbroken run on the island is water, so growth can extend the stream upstream. Candidate search costs ~500 traces per seed, cached per seed. The stream may be nearly straight on the smallest island when the camp leaves little room.
+
+## ADR-019: `resetMapOnStart` runtime option
+- Date: 2026-09-30 · Status: Accepted (owner request)
+- Decision: `config/app.yaml` `resetMapOnStart: true` makes every app start roll a new island seed and delete all placed animals (`StorageAdapter.resetWorld`). Sessions, settings and the active phase are kept.
+- Consequences: Data loss by design, for testing terrain generation; set `false` before release.

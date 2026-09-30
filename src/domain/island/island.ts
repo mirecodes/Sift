@@ -1,5 +1,8 @@
 import { config } from '../config';
 import { clamp, hash01, type Rng } from '../random';
+import { streamRuns, type StreamContext, type StreamTile } from './stream';
+
+export type { StreamTile };
 
 export interface Tile {
   x: number;
@@ -9,14 +12,18 @@ export interface Tile {
 export type BlockKind = 'grass' | 'dirt' | 'stone';
 
 export interface Block extends Tile {
-  /** Terrain top is `Cell.top`; layers go down from there, `-depth` is the lowest. */
+  /** Center of the block. Full blocks sit at integer y (0 down to `-depth`), slabs above y = 0. */
   y: number;
   kind: BlockKind;
+  /** Block height: 1 for a full block, `levelHeight` for a terrain slab. */
+  h: number;
 }
 
-/** A surface tile with its height. `top` is the y of the topmost block (0..2). */
+/** A surface tile with its height. The walkable surface is at `top + 0.5`. */
 export interface Cell extends Tile {
   top: number;
+  /** Stream bed: the water surface is at `top + 0.5 - bedDepth + waterDepth`. Animals never stand here. */
+  water?: true;
 }
 
 export interface IslandLayout {
@@ -24,13 +31,15 @@ export interface IslandLayout {
   /** Surface tiles, relative to the island center. */
   tiles: Cell[];
   blocks: Block[];
+  /** Runs of stream tiles on this island; the last tile of each run falls over the rim. */
+  streams: StreamTile[][];
   /** Number of layers below y = 0. */
   depth: number;
   /** Highest `top` on the island (extra headroom above y = 0). */
   rise: number;
 }
 
-/** Top side length: max(5, ceil(sqrt(animals × 3))), rounded up to odd. */
+/** Top side length: max(7, ceil(sqrt(animals × 3))), rounded up to odd. */
 export function islandSide(animalCount: number): number {
   const required = Math.max(0, animalCount) * config.island.tilesPerAnimal;
   const side = Math.max(config.island.minSide, Math.ceil(Math.sqrt(required)));
@@ -38,11 +47,11 @@ export function islandSide(animalCount: number): number {
 }
 
 /**
- * Distance of a tile from the center with a rounded-square metric plus a seeded
- * jitter. Independent of the island size, which makes shapes monotone: a tile
+ * Euclidean distance of a tile from the center plus a seeded jitter (near-circular
+ * outline). Independent of the island size, which makes shapes monotone: a tile
  * present at one side length is present at every larger one.
  */
-const roundedRadius = (x: number, z: number): number => (Math.abs(x) ** 4 + Math.abs(z) ** 4) ** 0.25;
+const roundedRadius = (x: number, z: number): number => Math.hypot(x, z);
 
 function outlineScore(seed: number, x: number, z: number): number {
   return roundedRadius(x, z) + hash01(seed, x, z, 1) * config.island.outlineJitter;
@@ -111,15 +120,40 @@ function fbm(seed: number, x: number, z: number): number {
   return sum / norm;
 }
 
-/** Terrain level 1..3 at any coordinate (uncarved). Higher toward the back of the screen (-x, -z). */
+const smoothstep = (a: number, b: number, v: number): number => {
+  const t = clamp((v - a) / (b - a), 0, 1);
+  return t * t * (3 - 2 * t);
+};
+
+/**
+ * Terrain level 1..3 at any coordinate. Warped noise plus a weak tilt toward the back (-x, -z),
+ * flattened around the camp, then terraced: mostly plains (2) with hills (3) and lowlands (1).
+ */
 export function terrainLevel(seed: number, x: number, z: number): number {
-  if ((x === FIRE_TILE.x && z === FIRE_TILE.z) || (x === HUT_TILE.x && z === HUT_TILE.z)) return CAMP_LEVEL;
-  const raw = 2 + 0.28 * -(x + z) + 0.8 * fbm(seed, x, z);
-  return clamp(Math.round(raw), 1, 3);
+  const t = config.island.terrain;
+  const campDistance = Math.hypot(x - (FIRE_TILE.x + HUT_TILE.x) / 2, z - (FIRE_TILE.z + HUT_TILE.z) / 2);
+  const natural = t.noise * fbm(seed, x, z) - t.tilt * (x + z);
+  const height = natural * smoothstep(t.flatRadius, t.blendRadius, campDistance);
+  return height > t.hill ? 3 : height < t.lowland ? 1 : CAMP_LEVEL;
 }
 
+/** `Cell.top` for a terrain level: level 1 is the base block (top 0), each further level adds `levelHeight`. */
+export const levelTop = (level: number): number => (level - 1) * config.island.levelHeight;
+
+const streamContext = (seed: number): StreamContext => ({
+  natural: (x, z) => terrainLevel(seed, x, z),
+  avoid: [FIRE_TILE, HUT_TILE],
+});
+
+const runsOf = (seed: number, side: number): StreamTile[][] => streamRuns(seed, streamContext(seed), (x, z) => isTile(seed, side, x, z));
+
+/** The stream replaces the natural terrain on its tiles: same level, cut down later by the bed. Everything else is natural. */
 function buildTerrain(seed: number, side: number): Cell[] {
-  return outlineTiles(seed, side).map((t) => ({ ...t, top: terrainLevel(seed, t.x, t.z) - 1 }));
+  const bed = new Map(runsOf(seed, side).flat().map((t) => [key(t), t.level]));
+  return outlineTiles(seed, side).map((t) => {
+    const level = bed.get(key(t));
+    return level === undefined ? { ...t, top: levelTop(terrainLevel(seed, t.x, t.z)) } : { ...t, top: levelTop(level), water: true };
+  });
 }
 
 /** Deterministic: same seed and animal count always give the same island. */
@@ -131,7 +165,7 @@ export function generateIsland(seed: number, animalCount: number): IslandLayout 
   let depth = 0;
   let rise = 0;
 
-  for (const { x, z, top } of tiles) {
+  for (const { x, z, top, water } of tiles) {
     // Depth follows the smooth radius (no jitter) so the pyramid tip is never hidden behind the rim.
     const maxDepth = Math.ceil(config.island.coneSlope * h) + 1;
     let layers = 1 + Math.floor(((h + 0.5 - roundedRadius(x, z)) / (h + 0.5)) * maxDepth);
@@ -140,29 +174,42 @@ export function generateIsland(seed: number, animalCount: number): IslandLayout 
     depth = Math.max(depth, layers);
     rise = Math.max(rise, top);
 
-    blocks.push({ x, z, y: top, kind: 'grass' });
-    for (let y = top - 1; y >= -layers; y--) {
-      const k = top - y;
+    // Base block at y = 0 (grass on level 1), then one half-height slab per extra level, grass on top.
+    const slabs = Math.round(top / config.island.levelHeight);
+    blocks.push({ x, z, y: 0, kind: slabs === 0 ? 'grass' : 'dirt', h: 1 });
+    for (let i = 1; i <= slabs; i++) {
+      const y = 0.5 + (i - 0.5) * config.island.levelHeight;
+      blocks.push({ x, z, y, kind: i === slabs ? 'grass' : 'dirt', h: config.island.levelHeight });
+    }
+    if (water) {
+      // Cut the stream bed: the top block loses `bedDepth` and turns to dirt.
+      const bed = blocks[blocks.length - 1] as Block;
+      bed.kind = 'dirt';
+      bed.y -= config.stream.bedDepth / 2;
+      bed.h -= config.stream.bedDepth;
+    }
+    for (let y = -1; y >= -layers; y--) {
+      const k = -y;
       const stoneChance = k === 1 ? 0 : Math.min(0.85, 0.25 + 0.2 * (k - 1));
       const kind: BlockKind = hash01(seed, x, z, 10 + k) < stoneChance ? 'stone' : 'dirt';
-      blocks.push({ x, z, y, kind });
+      blocks.push({ x, z, y, kind, h: 1 });
     }
   }
-  return { side, tiles, blocks, depth, rise };
+  return { side, tiles, blocks, streams: runsOf(seed, side), depth, rise };
 }
 
 /**
  * Picks a random empty tile, weighted toward the center. Returns `undefined`
  * only if the island is completely full.
  */
-/** Campfire (center) and hut (behind-left of it). Animals are never placed here. */
+/** Campfire (center) and hut (one empty tile away along -x, door facing the fire). Animals are never placed here. */
 export const FIRE_TILE: Tile = { x: 0, z: 0 };
-export const HUT_TILE: Tile = { x: -1, z: 0 };
+export const HUT_TILE: Tile = { x: -2, z: 0 };
 const RESERVED: readonly Tile[] = [FIRE_TILE, HUT_TILE];
 
-export function pickPlacementTile(tiles: readonly Tile[], occupied: readonly Tile[], rng: Rng): Tile | undefined {
+export function pickPlacementTile(tiles: readonly (Tile & { water?: boolean })[], occupied: readonly Tile[], rng: Rng): Tile | undefined {
   const taken = new Set([...occupied, ...RESERVED].map(key));
-  const free = tiles.filter((t) => !taken.has(key(t)));
+  const free = tiles.filter((t) => !t.water && !taken.has(key(t)));
   if (free.length === 0) return undefined;
 
   const bias = config.island.placementCenterBias;
