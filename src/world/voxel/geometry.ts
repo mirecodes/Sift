@@ -1,5 +1,6 @@
 import { BufferAttribute, BufferGeometry } from 'three';
 import { voxelModels } from '../../assets/voxels';
+import { butterflyBody, butterflyWing } from '../../assets/voxels/butterfly';
 import type { VoxelModel } from '../../assets/voxels/types';
 import { palette } from '../palette';
 import { buildBlockMesh, buildVoxelMesh, type MeshData } from './meshData';
@@ -29,6 +30,17 @@ export function animalGeometry(modelId: string): BufferGeometry {
     animalCache.set(modelId, g);
   }
   return g;
+}
+
+let flutter: { body: BufferGeometry; wing: BufferGeometry } | undefined;
+
+/** Butterfly body and one wing (mirror it for the other), so the wings can flap (ADR-024). */
+export function flutterParts() {
+  flutter ??= {
+    body: toGeometry(buildVoxelMesh(butterflyBody, VOXEL_SIZE)),
+    wing: toGeometry(buildVoxelMesh(butterflyWing, VOXEL_SIZE)),
+  };
+  return flutter;
 }
 
 export function modelById(modelId: string): VoxelModel {

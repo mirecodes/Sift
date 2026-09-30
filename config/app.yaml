@@ -9,3 +9,6 @@ testMode:
   # startup (chosen per page load, in memory only, never saved).
   enabled: true
   speciesCount: 4
+  # When true, every species in the catalog is placed once (the island grows to
+  # fit them all) and `speciesCount` is ignored.
+  allSpecies: true

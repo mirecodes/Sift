@@ -96,6 +96,7 @@
 - Date: 2026-09-30 · Status: Accepted (owner request)
 - Decision: `config/app.yaml` (Vite `?raw` + `yaml`, parsed in `src/app/runtimeConfig.ts`). `testMode` adds `speciesCount` random species in memory at startup, never stored; rewards untouched. Enabled by default for now.
 - Consequences: Bundled at build time; set `enabled: false` before release.
+- Update (same day): `testMode.allSpecies: true` places every catalog species once instead of `speciesCount` random ones. The island needs no special handling: it is sized from the animal count, so it grows to fit them all.
 
 ## ADR-016: Night mode, camp (hut + campfire), Focus routines
 - Date: 2026-09-30 · Status: Proposed
@@ -131,7 +132,27 @@
 ## ADR-023: Catalog grows from 20 to 50 species
 - Date: 2026-09-30 · Status: Accepted (owner request)
 - Decision: +16 Common, +8 Epic, +5 Legendary, +1 Mythic (Tiger). Sizes stay within DESIGN.md 16.2 (owner's larger block sizes were dropped) and ADR-005 (1×1 tile). Tiger shares the Unicorn's `sparkle` effect. Tier probabilities are unchanged, so a species' odds within a tier drop (uniform pick).
-- Consequences: Collection shows 50 cards and `ANIMALS` reads `n / 50`. Tiger is the white-tiger variant's orange sibling; a white variant is left for later.
+- Update: the Unicorn's idle is `rainbow` (shared sparkle plus intermittent rainbow bursts); the Tiger keeps plain `sparkle`. Consequences: Collection shows 50 cards and `ANIMALS` reads `n / 50`. Tiger is the white-tiger variant's orange sibling; a white variant is left for later.
+
+## ADR-024: Butterfly is flat, flaps and flies (`flutter` idle)
+- Date: 2026-09-30 · Status: Accepted (owner request) · Amends ADR-005 for this species only
+- Decision (DESIGN.md 18): the butterfly's world rendering uses a body mesh plus two wing meshes (one mirrored) rotated each frame, and it wanders in the air instead of hopping in its tile. `voxelModels.butterfly` stays one full model in rest pose so sprites and the reward card work unchanged; `butterflyBody` and `butterflyWing` are extra exports used only by the world.
+- Consequences: Its flight can leave its own tile (up to 1.2 tiles) and pass over water or the camp. Other species keep the single merged mesh. Rejected: flapping by swapping voxel frames (two or three cached geometries, stiff), a vertex shader (overkill for one species).
+
+## ADR-025: Legendary and Mythic models may be 8 voxels deep
+- Date: 2026-09-30 · Status: Accepted (owner request) · Amends the size limit in ADR-005
+- Decision: depth limit 8 (width still 6) for Legendary and Mythic; used by Tiger, Bear, Horse and Cow (body +2 voxels). Footprint stays 1×1: at the 0.25x world scale 8 voxels is 1/3 block.
+- Consequences: The shuffle range (±0.35) and the hut walk are unchanged; the models.test depth check is per tier.
+
+## ADR-026: Legendary and Mythic names swapped; Legendary is the top tier
+- Date: 2026-09-30 · Status: Accepted (owner request) · Amends the tier names used in ADR-023 and ADR-025
+- Decision: rank order is now Common < Epic < Mythic < Legendary. The ids, names, colors, reveal chimes, probabilities (Mythic 10% to 14%, Legendary 2% to 4%), height limits (Mythic 7–10, Legendary 10–12) and the 8-voxel depth allowance follow the rank, not the old name: the species that were Mythic (Unicorn, Tiger) are Legendary; those that were Legendary (Horse to Peacock) are Mythic. `TIERS` in `domain/config.ts` lists the ranks lowest to highest. Older ADRs keep their original wording and use the old names.
+- Consequences: Stored animals are migrated by Dexie schema version 2 (`tier` legendary to mythic and mythic to legendary). The tier colors moved with the rank (top tier pink, the one below orange), so the UI hierarchy looks the same. Rejected: swapping only the labels in `strings.ts` (ids would contradict the names in code), and keeping colors with the names (the top tier would turn orange).
+
+## ADR-027: Tier order Common, Mythic, Epic, Legendary with blue, pink, orange
+- Date: 2026-09-30 · Status: Accepted (owner request) · Amends ADR-026
+- Decision: the second tier (the 14 medium animals, Sheep to Koala) is now Mythic and blue (`--color-accent-blue`); the third tier (the 9 large animals, Horse to Peacock) is now Epic and pink; Legendary (Unicorn, Tiger) stays the top tier and turns orange. As in ADR-026 the ids follow the rank, so probabilities (Mythic 28% to 32%, Epic 10% to 14%, Legendary 2% to 4%), height limits (Mythic 5–7, Epic 7–10, Legendary 10–12), the 8-voxel depth allowance (Epic and Legendary) and the reveal chimes stay with the rank. `TIERS` is `common, mythic, epic, legendary`.
+- Consequences: Dexie schema version 3 renames stored tiers (epic and mythic swap). Purple is no longer a tier color, and blue is no longer reserved. `#3B89FF` with white text is about 3.4:1 (like the orange and pink fills, below the 4.5:1 goal in DESIGN.md 11; tier names are always shown as text). Earlier ADRs keep their original names.
 
 ## ADR-019: `resetMapOnStart` runtime option
 - Date: 2026-09-30 · Status: Accepted (owner request)

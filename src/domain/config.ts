@@ -3,9 +3,10 @@
  * so this file is plain data. Change values here only.
  */
 
-export type Tier = 'common' | 'epic' | 'legendary' | 'mythic';
+export type Tier = 'common' | 'mythic' | 'epic' | 'legendary';
 
-export const TIERS: readonly Tier[] = ['common', 'epic', 'legendary', 'mythic'];
+/** Lowest to highest rank: Common, Mythic, Epic, Legendary (ADR-027). */
+export const TIERS: readonly Tier[] = ['common', 'mythic', 'epic', 'legendary'];
 
 const MINUTE = 60_000;
 
@@ -16,8 +17,8 @@ export const config = {
     /** Effective focus time is capped here. */
     maxFocusMs: 60 * MINUTE,
     /** Tier probabilities at the minimum and at the cap; linearly interpolated between. */
-    tierAtMin: { common: 0.6, epic: 0.28, legendary: 0.1, mythic: 0.02 } as Record<Tier, number>,
-    tierAtMax: { common: 0.5, epic: 0.32, legendary: 0.14, mythic: 0.04 } as Record<Tier, number>,
+    tierAtMin: { common: 0.6, mythic: 0.28, epic: 0.1, legendary: 0.02 } as Record<Tier, number>,
+    tierAtMax: { common: 0.5, mythic: 0.32, epic: 0.14, legendary: 0.04 } as Record<Tier, number>,
   },
   settings: {
     focusMinutes: { default: 25, min: 5, max: 60, step: 5 },
