@@ -1,7 +1,7 @@
 # DECISIONS.md
 
-> Philosophy and ADRs for Sift. Maintained by the coding agent. Never delete an ADR; supersede it with a new one.
-> `Accepted` = settled. `Proposed` = default applied, owner should confirm or pick another option.
+> **Human reference only.** The rules in effect live in `ARCHITECTURE.md`; the coding agent appends ADRs here but never reads this file as a reference.
+> Never delete an ADR; supersede it with a new one. `Accepted` = settled. `Proposed` = default applied, owner should confirm or pick another option.
 
 ## Philosophy
 
@@ -158,3 +158,13 @@
 - Date: 2026-09-30 · Status: Accepted (owner request)
 - Decision: `config/app.yaml` `resetMapOnStart: true` makes every app start roll a new island seed and delete all placed animals (`StorageAdapter.resetWorld`). Sessions, settings and the active phase are kept.
 - Consequences: Data loss by design, for testing terrain generation; set `false` before release.
+
+## ADR-028: All documentation lives in `docs/`
+- Date: 2026-10-07 · Status: Accepted (owner request)
+- Decision: `ARCHITECTURE.md`, `DESIGN.md`, `DECISIONS.md`, `CHANGELOG.md` and `PROJECT_STATUS.md` live in `docs/`; new docs are created there too. `README.md` and `CLAUDE.md` stay at the root (convention, and Claude Code loads `CLAUDE.md` from the root).
+- Consequences: `CLAUDE.md` points at `docs/`. Bare file names in code comments and older entries (e.g. `DESIGN.md 16`) still mean the file in `docs/`.
+
+## ADR-029: Guidance-driven work; ARCHITECTURE holds the decisions
+- Date: 2026-10-07 · Status: Accepted (owner request)
+- Decision: The plan arrives as `docs/guidance_vN.md` and is implemented step by step; all work so far is guidance_v1. `ARCHITECTURE.md` was condensed and now contains every settled decision, so the agent reads only it and `DESIGN.md`. This file becomes a human-only log the agent appends to. `CHANGELOG.md` is grouped by guidance file instead of `[Unreleased]`.
+- Consequences: ADR tags in code and docs are pointers for humans; the rule itself must be stated in `ARCHITECTURE.md`.

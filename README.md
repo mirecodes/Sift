@@ -10,4 +10,4 @@ npm run build      # typecheck + production build
 npm run e2e        # Playwright smoke test (run `npm run build` first; needs `npx playwright install chromium` once)
 ```
 
-Design references: `ARCHITECTURE.md`, `DESIGN.md`, `DECISIONS.md`. Rules for the coding agent: `CLAUDE.md`.
+Documentation lives in `docs/`: `ARCHITECTURE.md`, `DESIGN.md`, `DECISIONS.md`, `CHANGELOG.md`, `PROJECT_STATUS.md`. Rules for the coding agent: `CLAUDE.md`.
