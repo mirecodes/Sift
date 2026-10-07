@@ -1,0 +1,7 @@
+{
+  "phaseLimit": 0,
+  "maxIterations": 40,
+  "verify": ["npm test", "npm run typecheck"],
+  "verifyTimeoutSeconds": 300,
+  "progressFile": "docs/PROGRESS.md"
+}
