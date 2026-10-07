@@ -1,264 +1,66 @@
 # ARCHITECTURE.md
 
-> This document is the design reference for the coding agent (Claude Code).
-> Items marked `[ASSUMPTION]` are defaults that have not been confirmed yet. Update them once the questions in `13. Open Questions` are resolved.
+> The coding agent's reference for structure, rules and settled decisions. `docs/DESIGN.md` covers look and feel.
+> `(ADR-0xx)` tags point to the human-facing log `docs/DECISIONS.md`; the rule stated here is what counts.
+> `[ASSUMPTION]` = default applied, not yet confirmed by the owner (see §12).
 
-### Related Documents
+## 1. Product
 
-| File | Purpose |
+- **Sift**: Pomodoro-style focus timer with collectible rewards (inspiration: Focus Pomo).
+- **Loop**: focus → earn a random animal → it is placed on a floating voxel island → the island grows → focus again.
+- **Platforms**: Phase 1 local desktop web app (done). Phase 2 iOS/Android by wrapping the same code with Capacitor (deferred, ADR-002).
+- **Work model**: features come from `docs/guidance_vN.md`, implemented step by step. Everything so far is guidance_v1.
+
+**Philosophy**: focus is the product, rewards are the garnish. Honest time: rewards only for real, completed focus. Gentle motivation: longer focus helps only slightly, and nothing worse than "no reward" ever happens. The island records accumulated effort.
+
+**Immersion principles** (win every conflict):
+1. Nothing interrupts focus: no popups, toasts, badges, or reward animations.
+2. Focus shows only the timer over a dimmed island; controls stay hidden until needed.
+3. Each cycle transition is one tap.
+4. Rewards are revealed only on Break.
+5. The timer is never wrong (tab switches, backgrounding, reloads).
+
+## 2. Stack and conventions
+
+| Area | Choice |
 |---|---|
-| `ARCHITECTURE.md` | Structure, data model, timer engine, milestones (this file) |
-| `DESIGN.md` | Design system: Part I UI design, Part II 3D rendering |
-| `DECISIONS.md` | Project philosophy and architecture decision records (ADRs) |
-| `CHANGELOG.md` | History of updates |
-| `CLAUDE.md` | Rules for the coding agent, including when to update each document |
+| Language / build | TypeScript (strict), Vite |
+| UI | React 18, CSS Modules + CSS custom properties from `tokens.css` (ADR-001) |
+| 3D | three.js + @react-three/fiber. No drei: custom `CameraRig` (ADR-009) |
+| State | Zustand (store with injectable deps) |
+| Storage | IndexedDB via Dexie, behind `StorageAdapter` |
+| Sound | Synthesized with Web Audio, no audio files (ADR-006) |
+| Tests | Vitest (logic), Playwright smoke test `npm run e2e` |
+| Mobile (later) | Capacitor |
 
----
+- All code, comments, docs, commits and UI text in English. UI strings only in `src/ui/strings.ts`.
+- All tunable numbers live in `src/domain/config.ts`. Visual values come from `DESIGN.md`; never inline new ones.
 
-## 1. Project Overview
-
-| Item | Description |
-|---|---|
-| Working title | Sift |
-| Genre | Pomodoro-style focus timer + collectible rewards |
-| Inspiration | Focus Pomo |
-| Core loop | Focus → earn a reward (an animal) → animal is placed on the island → island grows → next focus |
-| Phase 1 platform | Local web app (desktop browser) |
-| Phase 2 platform | iOS / Android apps (App Store / Play Store) |
-
-### 1.1 Top Design Principle: Never Break Immersion
-
-Every design decision follows the principles below. When features conflict, these principles win.
-
-1. **Nothing interrupts a focus session.** No popups, toasts, reward animations, or notification badges while focusing.
-2. **The focus screen shows only the timer and a calm, dimmed background.** Controls stay hidden unless needed.
-3. **Cycle transitions take one tap.** Focus end → break → next focus are each a single action.
-4. **Rewards are revealed during the break.** The reward animation plays only after focus ends.
-5. **The timer is never wrong.** Time stays accurate across tab switches, backgrounding, and page reloads.
-
----
-
-## 2. Language Policy
-
-- **All code, comments, identifiers, commit messages, documentation (`*.md`), and UI text are written in English.**
-- UI strings live in a single module (`src/ui/strings.ts`) so localization can be added later without touching components.
-
----
-
-## 3. Tech Stack
-
-| Area | Choice | Reason |
-|---|---|---|
-| Language | TypeScript (strict) | Type safety, agent code quality |
-| Build | Vite | Fast local development |
-| UI | React 18 | Compatible with Capacitor for mobile |
-| 3D rendering | three.js + @react-three/fiber + @react-three/drei | Voxel island and animal rendering |
-| State | Zustand | Lightweight, fits a timer state machine |
-| Persistence | IndexedDB (Dexie.js) | Local storage behind a swappable adapter |
-| Styling | CSS Modules or Tailwind `[ASSUMPTION]` | |
-| Testing | Vitest (logic), Playwright (E2E smoke test, `npm run e2e`) | |
-| Mobile | Capacitor `[ASSUMPTION]` | Maximizes reuse of the web code, including WebGL |
-
-> Mobile strategy: instead of rewriting in React Native, **wrap the same web code with Capacitor**. All platform-dependent features must therefore sit behind adapters in `platform/` (see section 8).
-
----
-
-## 4. Screens and Flow
-
-### 4.1 Screen List
-
-| Screen | Purpose |
-|---|---|
-| **Home** | Floating island (3D), start-focus button, entry to settings |
-| **Focus** | Fullscreen. Dark background, large centered timer, dimmed island behind it |
-| **Break** | Break timer, reward reveal, go home / start focus immediately |
-| **Settings** | Focus/break durations, sound, etc. |
-| **Collection** `[ASSUMPTION]` | Catalog of collected animals (50 species) |
-
-### 4.2 Flow
+## 3. Screens and flow
 
 ```mermaid
 stateDiagram-v2
     [*] --> Home
     Home --> Focus: Start focus
-    Focus --> FocusOvertime: Planned time reached
-    FocusOvertime --> Break: [End focus] button
-    Focus --> Home: Abandon (no reward)
-    Break --> Focus: [End break & focus now]
-    Break --> Home: [Home]
-    Break --> BreakOver: Break time reached
-    BreakOver --> Focus: [Start focus]
-    BreakOver --> Home: [Home]
+    Focus --> FocusOvertime: planned time reached
+    FocusOvertime --> Break: End focus
+    Focus --> Home: Hold to stop (no reward)
+    Break --> Focus: Start focus now
+    Break --> Home: Home
+    Break --> BreakOver: break time reached
+    BreakOver --> Focus: Start focus
+    BreakOver --> Home: Home
 ```
 
-### 4.3 Screen Details
-
-**Focus screen**
-- Enter fullscreen (Fullscreen API) and keep the screen awake (Screen Wake Lock API).
-- Layout:
-  - Background: the user's own island, rendered behind a **near-black overlay** (e.g. `rgba(0,0,0,0.8)`), so it is visible but does not draw attention.
-  - Center: a **large timer** (remaining time), high contrast, calm typography.
-  - Nothing else is visible by default.
-- The island shown is the island as it was when focus started. Newly earned animals appear only after the break reveal.
-- Transition from Home: the camera slowly pulls back and the overlay fades in (≈1s), so the island stays continuous between screens.
-- Rendering while focusing (battery and attention):
-  - Fixed camera, no user interaction with the scene.
-  - Animal idle animations slowed down or paused `[ASSUMPTION]`.
-  - Frame rate capped (e.g. 20–30fps) or on-demand rendering.
-- Controls (abandon) are hidden. Moving the mouse / tapping shows them semi-transparently for 3 seconds, then hides them again.
-- Abandon requires a **long press (1.5s)** to prevent accidents `[ASSUMPTION]`. **Abandoning gives no reward.**
-- When the planned time is reached:
-  - The timer switches from countdown to an **overtime count-up (`+05:23`)**.
-  - A soft sound plays once `[ASSUMPTION]` (can be disabled in settings).
-  - An **[End focus]** button becomes permanently visible.
-
-**Break screen**
-- On entry, reveal the animal earned in this session (3–5s, skippable).
-- If the session was shorter than the minimum reward time, show a short, neutral message instead (no reward, no guilt-tripping).
-- Break countdown.
-- Buttons: **[Home]**, **[End break & focus now]**.
-- When the break time is reached: play a sound once and wait in a "Ready to focus?" state (no auto-start) `[ASSUMPTION]`.
-
-**Home screen**
-- Floating island in the center, animals play idle animations on top.
-- Limited camera rotation/zoom `[ASSUMPTION]`.
-- Bottom: current cycle (e.g. `25 min focus · 5 min break`) and a **[Start focus]** button.
-
----
-
-## 5. Reward System
-
-### 5.1 Eligibility and Effective Focus Time
-
-- **Effective focus time = planned time + overtime**, capped at **60 minutes**. Anything over 60 minutes counts exactly as 60 minutes.
-- **Minimum for a reward: 25 minutes** of effective focus time. Below that, no reward.
-- Abandoned sessions never give a reward.
-
-### 5.2 Tiers
-
-From lowest to highest:
-
-| Tier | Description |
+| Screen | Rules |
 |---|---|
-| Common | Everyday small land animals |
-| Mythic | Larger or less common everyday animals |
-| Epic | Impressive real-world animals |
-| Legendary | The top tier: the fantasy unicorn and the tiger |
+| Home | Island with idle animals; limited rotate/zoom; current cycle + Start focus; top bar (theme, collection, settings) |
+| Focus | Fullscreen + wake lock. Near-black overlay over the island as it was at focus start. Large timer only. Hidden "Hold to stop" (1.5 s long press) shows for 3 s on pointer move. At planned time: count-up `+05:23`, one chime, permanent End focus button |
+| Break | Reward reveal (card fades in, model spins, tier chime; after 3.5 s or tap the animal joins the island; buttons usable throughout, ADR-011) or a neutral no-reward message. Break countdown, then "Ready for the next one?" with chime. Never auto-starts focus |
+| Settings | Focus 5–60 min (step 5), break 1–30 min, chimes toggle; saves instantly |
+| Collection | All 50 species (silhouettes if not owned, counts if duplicated) + stats: total focus time, completed sessions, species `n / 50` |
 
-> Tier names were reordered in ADR-026 and ADR-027. The rank order is Common, Mythic, Epic, Legendary (Legendary is the highest).
-
-### 5.3 Tier Probabilities
-
-- Tier is **rolled randomly**, not fixed by time.
-- Longer focus increases the odds of higher tiers **only slightly**; the distribution should feel similar across durations.
-- Probabilities are linearly interpolated between two anchor distributions:
-
-| Tier | At 25 min | At 60 min (max) |
-|---|---|---|
-| Common | 60% | 50% |
-| Mythic | 28% | 32% |
-| Epic | 10% | 14% |
-| Legendary | 2% | 4% |
-
-```ts
-// t = 0 at 25 min, t = 1 at 60 min
-const t = clamp((effectiveMinutes - 25) / (60 - 25), 0, 1);
-const p = lerp(P_AT_25, P_AT_60, t); // per tier, sums to 1
-```
-
-- Anchor values are `[ASSUMPTION]` and must be defined in one place only: `src/domain/config.ts`.
-- After the tier roll, the species is chosen uniformly at random within that tier.
-- Tier selection and species selection are pure functions with an injectable RNG (for testing).
-
-### 5.4 Animal Catalog (50 species, draft)
-
-| Tier | Animals | Count |
-|---|---|---|
-| Common | Chick, Rabbit, Duck, Hamster, Squirrel, Hedgehog, Mouse, Frog, **Fish**, Snail, Ladybug, Bee, Butterfly, Beetle, Turtle, Crab, Starfish, Mole, Sparrow, Pigeon, Hen, Guinea Pig, Lizard, Bat, Ferret | 25 |
-| Mythic | Sheep, Pig, Cat, Dog, Goat, Raccoon, Penguin, Owl, Otter, Beaver, Capybara, Axolotl, Parrot, Koala | 14 |
-| Epic | Horse, Cow, Deer, Fox, Wolf, Bear, Panda, Red Panda, Peacock | 9 |
-| Legendary | **Unicorn**, **Tiger** | 2 |
-
-- **Fish:** a flopping fish that hops in place on the grass (a fun, comedic animation). Tier placement is `[ASSUMPTION]`.
-- **Legendary (top tier):** Unicorn (fantasy animal, rainbow mane) and Tiger (orange with a forehead 王 mark). Both share the Legendary sparkle effect so the tier reads at a glance.
-- All other animals are real-world animals (insects, birds and sea creatures included).
-- The catalog is static data: `src/domain/animals/catalog.ts`
-- Each entry: `id`, `name`, `tier`, `modelId`, `idleAnimation`, `footprint` (tiles occupied).
-
-### 5.5 Duplicates `[ASSUMPTION]`
-- Duplicate animals are allowed; each one is placed on the island.
-
----
-
-## 6. 3D World: Floating Voxel Island
-
-### 6.1 View
-
-- **Orthographic camera** at an isometric (quarter-view) angle.
-  - Azimuth 45°, elevation ≈ 35.26°.
-- The island sits in the center. Below it, dirt/stone layers taper downward like an inverted pyramid so it looks like it floats in the air.
-- Background: sky gradient with slowly drifting clouds on Home `[ASSUMPTION]`. On the Focus screen the dark overlay covers the sky.
-- The whole island bobs slowly up and down.
-
-### 6.2 Island Structure
-
-```
-[ Top ]      Grass blocks (tiles where animals can be placed)
-[ Layer 1 ]  Dirt blocks
-[ Layer 2..N ] Stone/dirt, narrowing downward (random gaps for a natural look)
-```
-
-- 1 unit = 1 block.
-- Rendering: one `InstancedMesh` per block type (minimal draw calls).
-- Textures: pixel-art style, low-resolution, `NearestFilter`.
-
-### 6.3 Island Growth
-
-- The top surface grows with the number of animals.
-- Default rule `[ASSUMPTION]`:
-  - Initial size: 7×7
-  - Required tiles = `animalCount × 3` (includes free space per animal)
-  - Top side length = `max(7, ceil(sqrt(requiredTiles)))`, rounded up to an odd number
-- The shape is near-circular: tiles within a Euclidean radius of `side / 2` plus a small seeded jitter (deterministic generation).
-- Terrain height is level 1–3 per tile; one level is 0.5 block (`config.island.levelHeight`).
-- **Same animal count + same seed = always the same island** (shape never changes on reload).
-- A growth animation plays once when returning to Home after the island expands.
-
-### 6.3.1 Stream
-
-- `domain/island/stream.ts`: pure, seed-only stream path (tile centerline + water level per tile), picked from many candidate chords by a score (`StreamContext` supplies the natural terrain and the camp tiles). `generateIsland` replaces the natural terrain on those tiles (bed cut, same level), marks them `water`, and returns the visible run (`streams`, the last tile falls outward over the rim). The outline stays independent of the stream, so islands remain monotone.
-- `world/stream/streamMesh.ts` (pure): smoothed ribbon with curved falls and a round head, spray emitters (`spring`, `landing`, `rim`), and the bank mesh that fills each bed tile around the ribbon (marching squares on the distance to the ribbon edge, plus a wall down to the bed).
-- `world/stream/Stream.tsx`: renders the ribbon and strips, animates flow streaks and white splash particles (one instanced mesh, stateless per-particle motion).
-- Water tiles are excluded from animal placement.
-
-### 6.4 Animal Placement
-
-- New animals go on a random empty grass tile, preferring tiles near the center.
-- Placement coordinates are stored in the DB (existing animals keep their position as the island grows).
-- Coordinates are relative to the island center (0,0), so they remain valid after expansion.
-- Idle behavior: turning in place, short hops, moving one tile, etc. `[ASSUMPTION]`.
-- Interaction: clicking an animal (not on Focus, ADR-022) shows a `!` bubble and forces one idle action. Render-only state in `world/animals/Animals.tsx`; nothing is stored.
-
-### 6.5 Voxel Asset Generation
-
-- No external model files. Assets are **voxel data defined in code**.
-- Format: `src/assets/voxels/<animalId>.ts`
-  ```ts
-  export const chick: VoxelModel = {
-    size: [4, 5, 4],
-    palette: { 1: '#FFD93D', 2: '#FF8C42', 3: '#222222' },
-    voxels: [ /* [x, y, z, paletteIndex] */ ],
-  };
-  ```
-- At runtime, `VoxelModel` → merged `BufferGeometry` (hidden faces culled).
-- Size guideline: Common 3–5 voxels tall → Legendary 10–12 voxels tall (higher tiers are larger and more detailed).
-- Blocks are defined the same way.
-
----
-
-## 7. Timer Engine
-
-### 7.1 State Machine
+## 4. Timer engine
 
 ```ts
 type Phase =
@@ -269,175 +71,151 @@ type Phase =
   | { kind: 'breakOver'; rewardId?: string };
 ```
 
-- `focus → focusOvertime` and `break → breakOver` are derived from the current time (`resolvePhase(phase, now)`), so they cannot be missed. Only `idle`, `focus`, and `break` are persisted (ADR-003).
+- Persist only `idle`, `focus`, `break`. `resolvePhase(phase, now)` derives `focusOvertime` / `breakOver`, so they cannot be missed (ADR-003).
+- Elapsed = `now() - startedAt`, never accumulated ticks. Display ticks (250 ms) are not a source of truth. Recompute on `visibilitychange`. Phase is persisted on every change and restored on reload.
+- **Focus end**, in one DB transaction (no double rewards): effective time `min(endedAt - startedAt, 60 min)` → if ≥ 25 min roll tier, species, tile → save session + animal + next `break` phase.
+- Time-dependent logic takes an injected `now()`.
 
-### 7.2 Accuracy Rules
+## 5. Rewards
 
-- **Never accumulate time.** Do not add 1 second per `setInterval` tick.
-- Always compute elapsed time as `now() - startedAt`.
-- Screen updates use `requestAnimationFrame` or a 250ms tick (display only, never the source of truth).
-- The active session (`startedAt`, `phase`) is persisted on every change, and restored on reload/relaunch.
-- Recompute immediately on `visibilitychange`.
+- **Effective focus** = planned + overtime, capped at 60 min. **Minimum 25 min**. Abandon = no reward.
+- Focus can be set below 25 min; such sessions earn only with overtime, and the no-reward message explains it (ADR-012) `[ASSUMPTION]`.
+- **Tiers**, lowest to highest: Common < Mythic < Epic < Legendary (`TIERS` in `config.ts`; ADR-026/027).
+- Tier is rolled; odds interpolate linearly from 25 to 60 min (`[ASSUMPTION]`); species is then uniform within the tier. Pure functions with an injectable RNG.
 
-### 7.3 On Focus End
+| Tier | 25 min | 60 min | Species |
+|---|---|---|---|
+| Common | 60% | 50% | 25: Chick, Rabbit, Duck, Hamster, Squirrel, Hedgehog, Mouse, Frog, Fish, Snail, Ladybug, Bee, Butterfly, Beetle, Turtle, Crab, Starfish, Mole, Sparrow, Pigeon, Hen, Guinea Pig, Lizard, Bat, Ferret |
+| Mythic | 28% | 32% | 14: Sheep, Pig, Cat, Dog, Goat, Raccoon, Penguin, Owl, Otter, Beaver, Capybara, Axolotl, Parrot, Koala |
+| Epic | 10% | 14% | 9: Horse, Cow, Deer, Fox, Wolf, Bear, Panda, Red Panda, Peacock |
+| Legendary | 2% | 4% | 2: Unicorn (rainbow mane, rainbow bursts), Tiger (forehead 王). Both sparkle |
 
-1. Compute effective focus time: `min(endedAt - startedAt, 60 min)`
-2. If ≥ 25 min: roll tier → pick species → pick placement tile
-3. Save the session, the animal, and the next (break) active phase in a **single transaction**
-4. Switch to the break phase
+- Catalog is static data (`domain/animals/catalog.ts`): `id`, `name`, `tier`, `modelId`, `idleAnimation`, `footprint`. Duplicates allowed; each is placed.
+- Probabilities, chimes, model size limits and colors follow the **rank**, not the name. Renames migrate stored animals via a new Dexie version.
 
----
+## 6. 3D world
 
-## 8. Platform Abstraction Layer
+**Scene and camera**
+- One persistent `<Canvas>` for Home, Focus and Break; never remounted. Break reward card uses its own small canvas only while visible; Collection uses 2D pixel sprites (ADR-007).
+- Orthographic isometric camera (azimuth 45°, elevation ≈ 35.26°). Fits the island top + 35% of the underside with a 5% margin, re-fits on growth, avoids the screen area under panels (ADR-014).
+- Render modes: Home full (60 fps, interaction). Focus dimmed: fixed camera, 24 fps cap, animals at 0.25 speed, no clouds, 1 s camera pull-back. Break full, fixed camera.
 
-Browser APIs are never called directly; they go through interfaces so the app can move to mobile.
+**Island**
+- Deterministic: same seed + same animal count = same island. Shapes are **monotone** (growth only adds tiles), so stored animal coordinates (relative to center) stay valid.
+- Size: side = `max(7, ceil(sqrt(animals × 3)))`, odd. Near-circular outline (Euclidean + seeded jitter) (ADR-017).
+- Terrain levels 1–3, each 0.5 block. Domain-warped noise + weak back-high tilt, terraced (mostly plains, some hills/lowlands), flat around the camp (ADR-018).
+- Underside: inverted pyramid with random gaps. Blocks are flat-colored cubes, one `InstancedMesh` per type, ±4% tint (ADR-008).
+- During Break with a reward, the island is sized from `animals - 1`; the growth (700 ms scale-in) shows when returning Home (ADR-013).
 
-| Interface | Web implementation | Mobile implementation (later) |
+**Camp and night mode** (ADR-016, ADR-017)
+- `Settings.theme` `light | dark`, toggled from the top bar, locked during Focus.
+- Campfire on (0,0), log cabin on (-2,0) with its door facing the fire. Both tiles are reserved (never used for placement) and flat.
+- Focus routines picked by theme at focus start: day = animals walk into the cabin; night = they sleep near it. They return on Break. Reload into Focus shows the end state; reduced motion snaps.
+
+**Stream** (ADR-020, ADR-021)
+- One winding stream per island, from the seed only: best-scoring wobbling chord, avoids the camp, starts at a spring, falls off the rim outward. Cached per seed (~500 path traces).
+- Stream tiles keep their natural level with a 0.25 bed cut; water never flows uphill; only the first unbroken run is water. Water tiles are excluded from placement.
+- Modules: `domain/island/stream.ts` (path), `world/stream/streamMesh.ts` (ribbon, falls, bank mesh), `world/stream/Stream.tsx` (render, flow, stateless splash particles).
+
+**Animals**
+- One 1×1 tile per animal; placed on a random free grass tile near the center; idle stays in the tile: turn, hop, shuffle (ADR-005).
+- Exception: the butterfly flaps (separate wing meshes) and flies up to 1.2 tiles from its tile (ADR-024).
+- World scale 0.25× (animal voxel = 1/6 block in the model, 1/24 on the island) (ADR-014).
+- Model limits: width ≤ 6 voxels; depth ≤ 6, or 8 for Epic and Legendary (ADR-025).
+- Poke: clicking an animal (not on Focus) shows a `!` bubble and forces one idle action. Render-only state (ADR-022).
+- Voxel models are TS data in `src/assets/voxels/<id>.ts`, merged into one cached `BufferGeometry` per species (hidden faces culled).
+
+## 7. Platform layer
+
+Capability APIs only through `src/platform/<name>/` (interface `index.ts`, web `web.ts`, later `native.ts`):
+
+| Adapter | Web | Native (later) |
 |---|---|---|
 | `StorageAdapter` | IndexedDB (Dexie) | Capacitor SQLite / Preferences |
-| `WakeLockAdapter` | Screen Wake Lock API | Capacitor keep-awake plugin |
-| `FullscreenAdapter` | Fullscreen API | Immersive mode / hidden status bar |
-| `NotifyAdapter` | Web Audio + (optional) Notification API | Scheduled local notifications |
+| `WakeLockAdapter` | Screen Wake Lock API | keep-awake plugin |
+| `FullscreenAdapter` | Fullscreen API | immersive mode |
+| `NotifyAdapter` | Web Audio chimes | scheduled local notification for focus end (JS may be suspended) |
 | `HapticsAdapter` | no-op | Capacitor Haptics |
 
-- Location: `src/platform/<name>/index.ts` (interface) + `web.ts` / `native.ts` (implementations).
-- On mobile, JS may be suspended in the background, so **schedule a local notification for the focus end time in advance**.
+- "Capability API" = storage, wake lock, fullscreen, audio/notifications, haptics. DOM events, `visibilitychange`, `matchMedia`, `Date.now` are fine in `ui/`, `screens/`, `world/` (ADR-010).
+- Write no untested native stubs before M7 (ADR-002).
 
----
-
-## 9. Data Model
+## 8. Data model
 
 ```ts
-type Tier = 'common' | 'mythic' | 'epic' | 'legendary'; // lowest to highest
-
-interface Settings {
-  focusMinutes: number;      // default 25, range 5–60 [ASSUMPTION]
-  breakMinutes: number;      // default 5, range 1–30 [ASSUMPTION]
-  soundEnabled: boolean;
-}
-
+type Tier = 'common' | 'mythic' | 'epic' | 'legendary';
+interface Settings { focusMinutes: number; breakMinutes: number; soundEnabled: boolean; theme: 'light' | 'dark' }
 interface FocusSession {
-  id: string;
-  startedAt: number;         // epoch ms
-  plannedFocusMs: number;
-  endedAt?: number;
-  effectiveFocusMs?: number; // planned + overtime, capped at 60 min
-  status: 'running' | 'completed' | 'abandoned';
-  rewardAnimalId?: string;   // PlacedAnimal.id
+  id: string; startedAt: number; plannedFocusMs: number; endedAt?: number;
+  effectiveFocusMs?: number; status: 'running' | 'completed' | 'abandoned'; rewardAnimalId?: string;
 }
-
-interface PlacedAnimal {
-  id: string;
-  speciesId: string;         // catalog id
-  tier: Tier;
-  tileX: number;             // relative to island center
-  tileZ: number;
-  acquiredAt: number;
-  sessionId: string;
-}
-
-interface WorldState {
-  seed: number;              // island shape seed (generated once)
-}
-
-interface ActivePhase {      // single record for restoring an in-progress session
-  phase: Phase;
-}
+interface PlacedAnimal { id: string; speciesId: string; tier: Tier; tileX: number; tileZ: number; acquiredAt: number; sessionId: string }
+interface WorldState { seed: number }   // generated once
+interface ActivePhase { phase: Phase }  // restores an in-progress session
 ```
 
-- Keep a schema version and manage migrations with Dexie.
-- Prepared for future cloud sync: all ids are UUIDs, all timestamps are epoch ms (UTC).
+- Dexie tables: `kv` (settings, world, phase), `sessions`, `animals`. Schema **v3** (v2, v3 rename stored tiers).
+- Every change adds a new `db.version(n)` with an `upgrade`; never edit old versions.
+- UUID ids and UTC epoch-ms times, ready for future sync. The island itself is never stored (derived from seed + count).
 
----
+## 9. Runtime config
 
-## 10. Directory Structure
+`config/app.yaml`, bundled at build time (ADR-015, ADR-019):
+- `testMode` (`enabled`, `speciesCount`, `allSpecies`): fills the island in memory at startup; never stored, rewards untouched.
+- `resetMapOnStart`: new seed and all placed animals deleted on every start.
+- **Both are ON for development. Set both to `false` before release.**
+
+## 10. Directory structure
 
 ```
-config/
-└── app.yaml              # Runtime settings (test mode, map reset on start), bundled at build time
+docs/            ARCHITECTURE, DESIGN, DECISIONS (human log), CHANGELOG, PROJECT_STATUS, guidance_vN
+config/app.yaml  runtime config
+e2e/             Playwright smoke test
 src/
-├── app/                  # Routing, global layout, providers, runtimeConfig.ts (reads config/app.yaml)
-├── screens/
-│   ├── home/
-│   ├── focus/
-│   ├── break/
-│   ├── settings/
-│   └── collection/
-├── domain/               # Pure logic (no UI or browser dependencies)
-│   ├── config.ts         # All tunable numbers (tiers, probabilities, growth)
-│   ├── types.ts          # Settings (incl. theme), FocusSession, PlacedAnimal, WorldState
-│   ├── random.ts         # Injectable RNG, seeded PRNG, hash, clamp/lerp
-│   ├── timer/            # Phase state machine, derived overtime, formatting
-│   ├── reward/           # Eligibility, tier roll, species pick
-│   ├── animals/          # Catalog
-│   ├── island/           # Island size, shape generation, placement
-│   └── stats/            # Collection stats
-├── world/                # three.js / R3F rendering
-│   ├── voxel/            # VoxelModel → mesh data (pure) → BufferGeometry
-│   ├── island/           # Island meshes, growth animation
-│   ├── animals/          # Animal meshes, idle animations, unicorn sparkles
-│   ├── camera/           # Isometric camera rig, Home ↔ Focus transition
-│   ├── props/            # Camp: hut and campfire (night lighting)
-│   ├── stream/           # Stream ribbon, waterfalls, splash
-│   ├── preview/          # Small canvas for the Break reward card
-│   ├── Scene.tsx         # The one persistent canvas (+ Clouds, RenderDriver, palette)
-├── assets/
-│   └── voxels/           # Animal voxel definitions (TS) + builder helper (sounds are synthesized, ADR-006)
-├── store/                # Zustand app store (injectable deps) and React hook
-├── platform/             # Platform adapters (section 8); index.ts wires the web implementations
-├── db/                   # Dexie schema, repositories
-├── ui/                   # tokens.css/ts, strings.ts, hooks, shared components
-└── main.tsx
-e2e/                      # Playwright smoke test (npm run e2e)
+├── app/         App, routing, runtimeConfig.ts
+├── screens/     home, focus, break, settings, collection
+├── domain/      pure logic: config, types, random, timer/, reward/, animals/, island/ (+stream), stats/
+├── world/       Scene, Clouds, RenderDriver, palette, voxel/, island/, animals/, camera/, props/ (camp), stream/, preview/
+├── assets/voxels/  animal models + builder
+├── store/       Zustand store
+├── platform/    adapters (§7)
+├── db/          Dexie schema, repositories
+└── ui/          tokens.css/ts, strings.ts, hooks, components/
 ```
 
-**Dependency rules**
-- `domain/` imports nothing outside itself (pure TS).
-- `world/` and `screens/` may use `domain/` and `store/`. `ui/ThemeToggle` also reads the store.
-- Browser APIs are called only from `platform/`.
-
----
+- `domain/` imports nothing outside itself. `world/` and `screens/` may use `domain/` and `store/`. Capability APIs only in `platform/`.
 
 ## 11. Milestones
 
-| Milestone | Scope | Done when |
+| | Scope | Status |
 |---|---|---|
-| M1 | Timer core | Focus/overtime/break cycle works, survives reload, settings persist |
-| M2 | Reward logic | 25-min minimum, 60-min cap, interpolated tier roll, persistence (with unit tests) |
-| M3 | Voxel renderer + island | Isometric view, floating island, growth by animal count |
-| M4 | Focus screen immersion | Dark overlay over island, large timer, fullscreen, wake lock, auto-hiding controls, sound |
-| M5 | 20 animal assets | Voxel models, idle animations (flopping fish, unicorn effect), reward reveal |
-| M6 | Collection & polish | Collection screen, simple stats `[ASSUMPTION]`, responsive layout |
-| M7 | Mobile | Capacitor wrapper, native adapters, local notifications |
+| M1 | Timer core: cycle, reload-safe, settings | Done |
+| M2 | Rewards: 25 min min, 60 min cap, tier roll, atomic commit | Done |
+| M3 | Voxel island, growth, camera | Done |
+| M4 | Focus immersion: overlay, timer, fullscreen, wake lock, hidden controls, sound | Done |
+| M5 | Animals (now 50), idle animations, reward reveal | Done |
+| M6 | Collection, stats, responsive layout | Done |
+| M7 | Mobile: Capacitor, native adapters, local notifications | Not started |
 
----
+**Rules for the agent**
+- Every `domain/` module has Vitest tests (time math, 25 min threshold, 60 min cap, probabilities sum to 1, island size and monotonicity).
+- Check every Focus-screen addition against §1.
+- Performance: Home 60 fps with 100 animals (not yet measured); Focus low GPU. No per-frame allocations; dispose on unmount.
 
-## 12. Rules for the Coding Agent
+## 12. Open questions (current defaults, ADR-004)
 
-- Write everything in English (see section 2).
-- Follow `CLAUDE.md` for document maintenance: log changes in `CHANGELOG.md`, record decisions as ADRs in `DECISIONS.md`, and follow `DESIGN.md` for all visual work.
-- Every module in `domain/` must have Vitest unit tests, especially time calculations, the 25-min threshold, the 60-min cap, probability interpolation (distributions sum to 1), and island size.
-- Time-dependent logic takes an injected `now()` for testability.
-- All tunable numbers (reward threshold, cap, tier probabilities, growth factor, default durations) live in `src/domain/config.ts`.
-- Before adding any UI element to the Focus screen, check it against the immersion principles in 1.1.
-- Colors, fonts, motion durations, and voxel art rules come from `DESIGN.md`; never invent new ones inline.
-- Keep one persistent 3D canvas across Home and Focus (do not remount), and switch its render mode (full on Home, dimmed/throttled on Focus).
-- Performance targets: Home at 60fps with 100 animals; Focus screen at low GPU usage.
-
----
-
-## 13. Open Questions
-
-| # | Question | Current assumption |
+| # | Question | Default |
 |---|---|---|
-| Q1 | Which tier should the fish belong to? | Common |
-| Q2 | Are the tier probability anchors (60/28/10/2 → 50/32/14/4) acceptable? | Yes |
-| Q3 | Should animals move slightly on the Focus screen, or be completely still? | Slowed down |
-| Q4 | Should the next focus start automatically when the break ends? | No, wait for the user |
-| Q5 | Ambient sounds during focus (rain, etc.)? | Only an end-of-focus chime |
-| Q6 | Long breaks (e.g. 15 min every 4 cycles)? | Not supported |
-| Q7 | Can the user move or arrange animals on the island? | Automatic placement only |
-| Q8 | Rewards other than animals (trees, flowers, decorations)? | Animals only |
-| Q9 | Stats screen (daily/weekly focus time)? | Simple version in M6 |
-| Q10 | Accounts / cloud sync in the future? | Local only, schema prepared |
-| Q11 | Mobile approach | Capacitor wrapper |
+| Q1 | Fish tier | Common |
+| Q2 | Tier odds 60/28/10/2 → 50/32/14/4 | Accepted |
+| Q3 | Animals on Focus | Slowed + day/night routines |
+| Q4 | Auto-start focus after break | No |
+| Q5 | Ambient sound while focusing | No, end chime only |
+| Q6 | Long breaks | Not supported |
+| Q7 | Arrange animals | No; poke only |
+| Q8 | Non-animal rewards | No |
+| Q9 | Stats | All-time totals only |
+| Q10 | Accounts / sync | Local only, schema ready |
+| Q11 | Mobile approach | Capacitor |
+
+**Known limits**: no pathfinding (routine walks may cross the cabin or stream); animals saved before the camp/stream may overlap them; the butterfly may fly over water and the camp.

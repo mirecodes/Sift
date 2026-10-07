@@ -282,7 +282,7 @@ All buttons: `button` type, `--radius-sm`, padding `--space-md` `--space-xl`. On
 - Canvas, `display-md` title, card grid (1 / 3 / 4-up).
 - Collected: `card-tier`. Not collected: `card-feature` with silhouette and `???`.
 - **Card contents.** A 96px pixel-art sprite of the animal (front view, nearest-neighbor scaled), the name in `display-xs`, `badge-tier`, and a `caption` count `×3` when more than one is owned. Silhouettes are solid `--color-mute-soft` shapes.
-- **Stats strip** above the grid: three `card-feature`s (`FOCUS TIME` as `12 h 40 min`, `SESSIONS`, `ANIMALS` as `7 / 20`), each with an `eyebrow` label and a `display-sm` value. Stacked 1-up on Mobile, 3-up from Tablet.
+- **Stats strip** above the grid: three `card-feature`s (`FOCUS TIME` as `12 h 40 min`, `SESSIONS`, `ANIMALS` as `7 / 50`), each with an `eyebrow` label and a `display-sm` value. Stacked 1-up on Mobile, 3-up from Tablet.
 
 ---
 
